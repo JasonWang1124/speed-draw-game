@@ -61,3 +61,4 @@ coverage/
 # --- Claude Code 自身 ---
 .claude/
 CLAUDE.local.md
+.omx/
