@@ -18,4 +18,19 @@ export function normalize(s) {
     .toLowerCase();
 }
 
+// 比對使用者答案是否符合題目（含別名）
+// q 可以是字串或題目物件 { name, aliases? }
+export function matchAnswer(input, q) {
+  const target = normalize(input);
+  if (!target) return false;
+  if (typeof q === "string") return normalize(q) === target;
+  if (normalize(q.name) === target) return true;
+  if (Array.isArray(q.aliases)) {
+    for (const alias of q.aliases) {
+      if (normalize(alias) === target) return true;
+    }
+  }
+  return false;
+}
+
 export const defaultName = (i) => `選手 ${String.fromCharCode(65 + i)}`;

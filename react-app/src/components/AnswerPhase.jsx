@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 import { speak, cancelAllSpeech } from "../lib/tts";
-import { normalize } from "../lib/util";
+import { matchAnswer } from "../lib/util";
 
 const COLORS = ["#ffb4a2", "#ffd66e", "#b6e2d3", "#a8dadc", "#b388ff", "#ff7a8a", "#ffafcc", "#bde0fe", "#caffbf", "#ffd6a5"];
 
@@ -85,7 +85,7 @@ export default function AnswerPhase({ config, questions, answerOrder, answerAssi
   function submitAnswer() {
     const val = inputRef.current?.value.trim() ?? "";
     if (!val) return;
-    if (normalize(val) === normalize(q.name)) {
+    if (matchAnswer(val, q)) {
       stopTimer();
       setScore(mainPlayerIdx, 2);
       setScoredPlayer(mainPlayerIdx);
@@ -144,7 +144,7 @@ export default function AnswerPhase({ config, questions, answerOrder, answerAssi
   function submitSteal() {
     const val = stealInputRef.current?.value.trim() ?? "";
     if (!val || stealActiveIdx == null) return;
-    if (normalize(val) === normalize(q.name)) {
+    if (matchAnswer(val, q)) {
       setScore(stealActiveIdx, 1);
       setScoredPlayer(stealActiveIdx);
       setResultKind("correct");
