@@ -1,0 +1,1981 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>速記速畫遊戲</title>
+<style>
+  :root {
+    --bg-1: #1a1430;
+    --bg-2: #2d1b4e;
+    --bg-3: #4a1f5c;
+    --accent: #ff8fb3;
+    --accent-2: #b388ff;
+    --text: #f5edff;
+    --text-dim: #b8a8d4;
+    --glass: rgba(255, 255, 255, 0.08);
+    --glass-border: rgba(255, 255, 255, 0.15);
+    --good: #7dffaf;
+    --warn: #ffd66e;
+    --bad: #ff7a8a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%;
+    font-family: -apple-system, "PingFang TC", "Heiti TC", "Noto Sans TC", sans-serif;
+    color: var(--text);
+    background: linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 50%, var(--bg-3) 100%);
+    background-attachment: fixed;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(circle at 20% 30%, rgba(255, 143, 179, 0.15), transparent 40%),
+      radial-gradient(circle at 80% 70%, rgba(179, 136, 255, 0.18), transparent 45%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .app {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    padding: 32px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .subtitle {
+    color: var(--text-dim);
+    margin-bottom: 32px;
+    font-size: 14px;
+  }
+  .panel {
+    width: 100%;
+    max-width: 720px;
+    background: var(--glass);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 28px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  label {
+    font-size: 13px;
+    color: var(--text-dim);
+    font-weight: 500;
+  }
+  input[type="number"], select {
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-size: 16px;
+    font-family: inherit;
+    transition: border-color 0.2s;
+  }
+  input[type="number"]:focus, select:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 0;
+  }
+  input[type="checkbox"] {
+    width: 18px; height: 18px;
+    accent-color: var(--accent);
+  }
+  .btn {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: white;
+    border: none;
+    padding: 14px 32px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    font-family: inherit;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(255, 143, 179, 0.4); }
+  .btn:active { transform: translateY(0); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+  .btn.secondary {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--glass-border);
+  }
+  .btn.secondary:hover { background: rgba(255, 255, 255, 0.18); }
+  .btn-row {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+
+  /* Question phase */
+  .question-stage {
+    width: 100%;
+    max-width: 900px;
+    text-align: center;
+    padding: 40px 20px;
+  }
+  .question-progress {
+    color: var(--text-dim);
+    font-size: 14px;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+  }
+  .question-text {
+    font-size: clamp(80px, 14vw, 180px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: 4px;
+    background: linear-gradient(180deg, #fff 0%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin: 30px 0;
+    animation: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .speaker-pulse {
+    margin: 60px auto 40px;
+    text-align: center;
+  }
+  .speaker-icon {
+    font-size: clamp(120px, 20vw, 240px);
+    line-height: 1;
+    display: inline-block;
+    animation: pulse 1s ease-in-out infinite;
+    filter: drop-shadow(0 0 30px rgba(255, 143, 179, 0.6));
+  }
+  .speaker-hint {
+    margin-top: 20px;
+    font-size: clamp(20px, 3vw, 32px);
+    color: var(--text-dim);
+    letter-spacing: 8px;
+    font-weight: 600;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 0.9; }
+    50% { transform: scale(1.15); opacity: 1; }
+  }
+  @keyframes pop {
+    0% { transform: scale(0.5); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .countdown-bar {
+    width: 100%;
+    height: 6px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 30px;
+  }
+  .countdown-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    width: 100%;
+    transform-origin: left;
+  }
+
+  /* Answer phase */
+  .answer-stage { width: 100%; max-width: 720px; }
+  .answer-card {
+    background: var(--glass);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 28px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  .round-label {
+    color: var(--text-dim);
+    font-size: 13px;
+    letter-spacing: 3px;
+    margin-bottom: 8px;
+  }
+  .player-pill {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: white;
+    padding: 8px 20px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 18px;
+    margin-bottom: 16px;
+  }
+  .answer-question {
+    font-size: 18px;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+  .answer-text {
+    font-size: 56px;
+    font-weight: 800;
+    margin: 12px 0;
+    background: linear-gradient(180deg, #fff, var(--accent));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .answer-hint {
+    color: var(--text-dim);
+    font-size: 14px;
+    line-height: 1.6;
+    margin-top: 8px;
+    padding: 0 12px;
+  }
+  .score-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .score-btn {
+    padding: 10px 18px;
+    border-radius: 10px;
+    border: 1px solid var(--glass-border);
+    background: rgba(255,255,255,0.05);
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .score-btn:hover { background: rgba(255,255,255,0.12); }
+  .score-btn.active-2 { background: var(--good); color: #1a1430; border-color: var(--good); }
+  .score-btn.active-1 { background: var(--warn); color: #1a1430; border-color: var(--warn); }
+  .score-btn.active-0 { background: var(--bad); color: #1a1430; border-color: var(--bad); }
+
+  .scoreboard {
+    display: grid;
+    gap: 12px;
+    margin-top: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  }
+  .score-card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    padding: 16px;
+    text-align: center;
+  }
+  .score-card .name { font-size: 14px; color: var(--text-dim); }
+  .score-card .points { font-size: 32px; font-weight: 800; margin-top: 4px; }
+
+  .hidden { display: none !important; }
+
+  /* Final */
+  .winner-banner {
+    text-align: center;
+    padding: 40px 20px;
+  }
+  .winner-banner .crown {
+    font-size: 60px;
+    margin-bottom: 12px;
+  }
+  .winner-name {
+    font-size: 56px;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    letter-spacing: 4px;
+    margin-bottom: 8px;
+  }
+  .final-scores {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    margin-top: 24px;
+  }
+  .rank-card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+  }
+  .rank-card.first { border-color: var(--accent); box-shadow: 0 0 24px rgba(255,143,179,0.4); }
+  .rank-card .rank { font-size: 24px; font-weight: 800; }
+  .rank-card .player { font-size: 18px; margin: 4px 0; color: var(--text-dim); }
+  .rank-card .pts { font-size: 32px; font-weight: 800; }
+
+  .category-tag {
+    display: inline-block;
+    background: rgba(255,255,255,0.08);
+    color: var(--text-dim);
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    margin-top: 8px;
+  }
+
+  .answer-timer {
+    margin-bottom: 8px;
+    text-align: center;
+  }
+  .timer-display {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .timer-display.warning { color: var(--warn); }
+  .timer-display.danger { color: var(--bad); animation: shake 0.4s infinite; }
+  .timer-bar {
+    width: 100%;
+    height: 6px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .timer-fill {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, var(--good), var(--accent));
+    transform-origin: left;
+    transition: transform linear, background 0.3s;
+  }
+  .timer-fill.warning { background: linear-gradient(90deg, var(--warn), var(--accent)); }
+  .timer-fill.danger { background: linear-gradient(90deg, var(--bad), var(--accent)); }
+  .wrong-counter {
+    color: var(--text-dim);
+    font-size: 13px;
+    text-align: center;
+    margin-bottom: 6px;
+  }
+  .wrong-counter.danger { color: var(--bad); font-weight: 600; }
+
+  #aInput {
+    width: 100%;
+    background: rgba(0,0,0,0.3);
+    border: 2px solid var(--glass-border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    color: var(--text);
+    font-size: 24px;
+    text-align: center;
+    font-family: inherit;
+    margin: 12px 0;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  #aInput:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 20px rgba(255,143,179,0.3); }
+  #aInput.shake {
+    animation: shake 0.4s;
+    border-color: var(--bad);
+    box-shadow: 0 0 20px rgba(255,122,138,0.4);
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-8px); }
+    75% { transform: translateX(8px); }
+  }
+  .input-btn-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+  .attempt-list {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+    min-height: 24px;
+  }
+  .attempt-tag {
+    background: rgba(255,122,138,0.15);
+    color: var(--bad);
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    border: 1px solid rgba(255,122,138,0.3);
+    text-decoration: line-through;
+  }
+  .result-icon {
+    font-size: 80px;
+    margin-bottom: 8px;
+    line-height: 1;
+    animation: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .result-icon.correct { color: var(--good); }
+  .result-icon.gaveup { color: var(--bad); }
+
+  .steal-title {
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 4px;
+    background: linear-gradient(135deg, var(--warn), var(--accent));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .steal-hint {
+    color: var(--text-dim);
+    font-size: 13px;
+    margin-bottom: 14px;
+  }
+  .steal-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 14px;
+  }
+  .steal-player-btn {
+    background: rgba(255, 214, 110, 0.12);
+    border: 2px solid rgba(255, 214, 110, 0.4);
+    color: var(--text);
+    padding: 10px 20px;
+    border-radius: 999px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .steal-player-btn:hover { background: rgba(255, 214, 110, 0.25); transform: translateY(-2px); }
+  .steal-player-btn.disabled {
+    opacity: 0.35;
+    pointer-events: none;
+    text-decoration: line-through;
+  }
+  .steal-player-btn.active {
+    background: linear-gradient(135deg, var(--warn), var(--accent));
+    color: #1a1430;
+    border-color: var(--warn);
+  }
+  #stealInput {
+    width: 100%;
+    background: rgba(0,0,0,0.3);
+    border: 2px solid rgba(255, 214, 110, 0.4);
+    border-radius: 14px;
+    padding: 16px 20px;
+    color: var(--text);
+    font-size: 22px;
+    text-align: center;
+    font-family: inherit;
+    margin: 12px 0;
+  }
+  #stealInput:focus { outline: none; border-color: var(--warn); }
+
+  .player-names {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    margin-top: 8px;
+    margin-bottom: 16px;
+  }
+  .player-names input {
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-size: 15px;
+    font-family: inherit;
+  }
+  .player-names input:focus { outline: none; border-color: var(--accent); }
+  .section-label {
+    font-size: 13px;
+    color: var(--text-dim);
+    font-weight: 500;
+    margin-top: 8px;
+  }
+  .voice-status {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 6px;
+  }
+  .voice-status.ok { color: var(--good); }
+  .voice-status.warn { color: var(--warn); }
+
+  @media (max-width: 600px) {
+    .row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>速記速畫遊戲</h1>
+  <div class="subtitle">外型相似題 · 自動出題 · 隨機分配回答</div>
+
+  <!-- ============ Setup ============ -->
+  <div id="setup" class="panel">
+    <div class="row">
+      <div class="field">
+        <label>參賽人數</label>
+        <input type="number" id="playerCount" min="2" max="10" value="3" />
+      </div>
+      <div class="field">
+        <label>題目數量</label>
+        <input type="number" id="questionCount" min="3" max="30" value="15" />
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>出題每題秒數</label>
+        <input type="number" id="intervalSec" min="1" max="10" value="2" />
+      </div>
+      <div class="field">
+        <label>作答秒數（每位主答者）</label>
+        <input type="number" id="answerSec" min="3" max="60" value="10" />
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>題目類別</label>
+        <select id="category"></select>
+      </div>
+      <div class="field">
+        <label>主答者最多錯幾次</label>
+        <input type="number" id="maxWrongs" min="0" max="5" value="1" />
+      </div>
+    </div>
+
+    <div class="section-label">參賽者名稱</div>
+    <div class="player-names" id="playerNames"></div>
+
+    <div class="checkbox-row">
+      <input type="checkbox" id="useTTS" checked />
+      <label for="useTTS" style="cursor:pointer">啟用語音播報（中文 TTS）</label>
+    </div>
+    <div class="field" style="margin-top:8px">
+      <label>選擇語音（自動偵測，可手動覆蓋）</label>
+      <select id="voiceSelect"></select>
+    </div>
+    <div class="voice-status" id="voiceStatus">語音載入中…</div>
+    <div class="btn-row" style="margin-top:8px;margin-bottom:0;gap:8px">
+      <button class="btn secondary" id="testVoiceBtn" style="padding:8px 16px;font-size:13px">測試中文</button>
+      <button class="btn secondary" id="testEnBtn" style="padding:8px 16px;font-size:13px">測試英文</button>
+      <button class="btn secondary" id="testBeepBtn" style="padding:8px 16px;font-size:13px">測試 Beep</button>
+      <button class="btn secondary" id="debugBtn" style="padding:8px 16px;font-size:13px">列出所有語音</button>
+    </div>
+    <pre id="debugLog" style="background:rgba(0,0,0,0.3);color:#9fe;padding:12px;border-radius:8px;margin-top:12px;font-size:11px;max-height:200px;overflow:auto;display:none;white-space:pre-wrap;word-break:break-all"></pre>
+    <div class="checkbox-row">
+      <input type="checkbox" id="shuffleAnswer" checked />
+      <label for="shuffleAnswer" style="cursor:pointer">解答階段打亂題號順序</label>
+    </div>
+    <div class="btn-row">
+      <button class="btn" id="startBtn">開始遊戲</button>
+    </div>
+  </div>
+
+  <!-- ============ Countdown before start ============ -->
+  <div id="prestart" class="panel hidden" style="text-align:center">
+    <div class="round-label">準備出題</div>
+    <div id="prestartNum" style="font-size:160px;font-weight:800;color:var(--accent)">3</div>
+  </div>
+
+  <!-- ============ Question phase ============ -->
+  <div id="question" class="question-stage hidden">
+    <div class="question-progress">
+      第 <span id="qIdx">1</span> / <span id="qTotal">15</span> 題
+    </div>
+    <div class="speaker-pulse" id="speakerPulse">
+      <div class="speaker-icon">🔊</div>
+      <div class="speaker-hint">仔細聽</div>
+    </div>
+    <div class="countdown-bar"><div class="countdown-fill" id="cdFill"></div></div>
+  </div>
+
+  <!-- ============ Answer phase ============ -->
+  <div id="answer" class="answer-stage hidden">
+    <div class="answer-card">
+      <div class="round-label">第 <span id="aRound">1</span> 輪 / 共 <span id="aTotal">15</span> 輪</div>
+      <div class="player-pill" id="aPlayer">選手 A</div>
+      <div class="answer-question">請回答第 <span id="aQNum">1</span> 題</div>
+
+      <div id="aInputArea">
+        <div class="answer-timer">
+          <div class="timer-display"><span id="timerSec">10</span> 秒</div>
+          <div class="timer-bar"><div class="timer-fill" id="timerFill"></div></div>
+        </div>
+        <div class="wrong-counter">
+          錯誤 <span id="wrongCount">0</span> / <span id="wrongMax">1</span>
+        </div>
+        <input type="text" id="aInput" placeholder="輸入答案後按 Enter 或送出"
+               autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+        <div class="input-btn-row">
+          <button class="btn" id="aSubmitBtn">送出答案</button>
+          <button class="btn secondary" id="aRevealBtn">換人作答</button>
+        </div>
+        <div class="attempt-list" id="aAttempts"></div>
+      </div>
+
+      <div id="aStealArea" class="hidden">
+        <div class="steal-title">🎯 換人作答</div>
+        <div class="steal-hint">點選一位選手由他作答（答對該選手 +1，答錯則無法再選）</div>
+        <div class="steal-buttons" id="stealButtons"></div>
+        <input type="text" id="stealInput" placeholder="輸入答案後按 Enter"
+               autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+               class="hidden" />
+        <div class="input-btn-row" id="stealSubmitRow" style="display:none">
+          <button class="btn" id="stealSubmitBtn">送出</button>
+          <button class="btn secondary" id="stealCancelBtn">取消</button>
+        </div>
+        <div class="attempt-list" id="stealAttempts"></div>
+        <div class="btn-row" style="margin-top:14px">
+          <button class="btn secondary" id="skipStealBtn">跳過 → 下一題</button>
+        </div>
+      </div>
+
+      <div id="aResultArea" class="hidden">
+        <div class="result-icon" id="aResultIcon">✓</div>
+        <div class="answer-text" id="aAnswer">蘋果</div>
+        <div class="answer-hint" id="aHint">外型重點…</div>
+        <div class="score-buttons">
+          <button class="score-btn" data-score="2">2 分（自己答對）</button>
+          <button class="score-btn" data-score="1">1 分（接近／提示後對）</button>
+          <button class="score-btn" data-score="0">0 分（沒答出）</button>
+        </div>
+      </div>
+    </div>
+    <div class="scoreboard" id="scoreboard"></div>
+    <div class="btn-row">
+      <button class="btn secondary" id="prevAnsBtn">上一題</button>
+      <button class="btn" id="nextAnsBtn">下一題</button>
+    </div>
+  </div>
+
+  <!-- ============ Final ============ -->
+  <div id="final" class="panel hidden">
+    <div class="winner-banner">
+      <div class="crown">🏆</div>
+      <div class="round-label">冠軍</div>
+      <div class="winner-name" id="winnerName">選手 A</div>
+    </div>
+    <div class="final-scores" id="finalScores"></div>
+    <div class="btn-row">
+      <button class="btn" id="restartBtn">再來一局</button>
+    </div>
+  </div>
+</div>
+
+<script type="application/json" id="question-bank">
+{
+  "categories": [
+    {
+      "id": "round",
+      "label": "圓形類",
+      "desc": "蘋果、番茄、球…全部畫成一個圓",
+      "items": [
+        { "name": "蘋果", "hint": "圓形果實，重點是蒂頭和葉子。" },
+        { "name": "番茄", "hint": "圓形，頂端有星狀蒂葉。" },
+        { "name": "橘子", "hint": "圓形帶皮紋，常有小蒂。" },
+        { "name": "柳橙", "hint": "圓形果實，皮較厚有顆粒感。" },
+        { "name": "葡萄柚", "hint": "圓形帶皮，比橘子大。" },
+        { "name": "洋蔥", "hint": "圓形帶皮紋，頂端有尖芽。" },
+        { "name": "馬鈴薯", "hint": "橢圓不規則，表面有凹芽眼。" },
+        { "name": "地瓜", "hint": "橢圓較長，皮粗糙。" },
+        { "name": "奇異果", "hint": "橢圓帶絨毛，剖面有黑籽圈。" },
+        { "name": "水煮蛋", "hint": "白色橢圓，剖面可見蛋黃。" },
+        { "name": "茶葉蛋", "hint": "橢圓帶裂紋。" },
+        { "name": "李子", "hint": "圓形帶蒂，表面光滑。" },
+        { "name": "櫻桃", "hint": "小圓球加長梗。" },
+        { "name": "桃子", "hint": "圓形有溝，頂端有葉。" },
+        { "name": "西瓜", "hint": "大圓球帶條紋。" },
+        { "name": "甜甜圈", "hint": "圓環形，中間有洞。" },
+        { "name": "貝果", "hint": "圓環形但較厚實。" },
+        { "name": "鈴鐺", "hint": "圓球形，下方有開口。" },
+        { "name": "地球儀", "hint": "圓球加底座與支架。" },
+        { "name": "玻璃球", "hint": "純粹圓球，可加反光。" },
+        { "name": "毛線球", "hint": "圓球加纏繞線條。" },
+        { "name": "保齡球", "hint": "圓球有三個指洞。" },
+        { "name": "氣球", "hint": "圓球下方有打結與線。" },
+        { "name": "籃球", "hint": "圓球加交叉條紋。" },
+        { "name": "排球", "hint": "圓球加面板分割線。" },
+        { "name": "網球", "hint": "圓球加曲線縫線。" },
+        { "name": "棒球", "hint": "圓球加雙曲縫線。" },
+        { "name": "高爾夫球", "hint": "小圓球加凹點紋。" },
+        { "name": "湯圓", "hint": "白色小圓球。" },
+        { "name": "丸子", "hint": "圓球串在竹籤上。" },
+        { "name": "彈珠", "hint": "小玻璃圓球。" },
+        { "name": "鳳梨", "hint": "橢圓帶刺紋與葉冠。" }
+      ]
+    },
+    {
+      "id": "long",
+      "label": "長條類",
+      "desc": "鉛筆、吸管、香腸…全部畫成一根棒子",
+      "items": [
+        { "name": "鉛筆", "hint": "細長加筆尖、橡皮擦。" },
+        { "name": "原子筆", "hint": "細長加按壓頭或筆蓋。" },
+        { "name": "螢光筆", "hint": "較粗，斜角筆頭。" },
+        { "name": "毛筆", "hint": "長桿加蓬鬆筆毛。" },
+        { "name": "鋼筆", "hint": "長桿加金屬筆尖與蓋。" },
+        { "name": "蠟筆", "hint": "短粗圓柱，包紙。" },
+        { "name": "牙刷", "hint": "長柄加一排刷毛。" },
+        { "name": "湯匙", "hint": "長柄加橢圓匙面。" },
+        { "name": "叉子", "hint": "長柄加四齒。" },
+        { "name": "刀子", "hint": "長柄加細長刀刃。" },
+        { "name": "筷子", "hint": "細長一雙（兩根）。" },
+        { "name": "吸管", "hint": "中空細管，可有彎折。" },
+        { "name": "蠟燭", "hint": "圓柱加上方火焰燭芯。" },
+        { "name": "手電筒", "hint": "圓柱前端有大燈頭。" },
+        { "name": "溫度計", "hint": "細長加底部圓球與刻度。" },
+        { "name": "口紅", "hint": "短圓柱加斜切膏體。" },
+        { "name": "睫毛膏", "hint": "細管加螺旋刷頭。" },
+        { "name": "螺絲起子", "hint": "柄＋桿＋十字或一字頭。" },
+        { "name": "鐵鎚", "hint": "長柄加 T 字鎚頭。" },
+        { "name": "扳手", "hint": "長柄加 U 形開口。" },
+        { "name": "麥克風", "hint": "長柄加圓形網格收音頭。" },
+        { "name": "遙控器", "hint": "長方扁平加按鈕陣列。" },
+        { "name": "直笛", "hint": "細長管加一排小孔。" },
+        { "name": "長笛", "hint": "細長銀色管加按鍵。" },
+        { "name": "口哨", "hint": "短管加吹口與球。" },
+        { "name": "香腸", "hint": "長條圓弧兩端，可有皺褶。" },
+        { "name": "熱狗", "hint": "長條圓弧夾在麵包中。" },
+        { "name": "玉米", "hint": "長條粒狀加葉鞘。" },
+        { "name": "黃瓜", "hint": "長條綠色帶刺紋。" },
+        { "name": "胡蘿蔔", "hint": "錐形橘紅加綠葉。" },
+        { "name": "棒棒糖", "hint": "球狀糖加細棒。" },
+        { "name": "雪茄", "hint": "粗短圓柱加暗色。" }
+      ]
+    },
+    {
+      "id": "umbrella",
+      "label": "傘狀類",
+      "desc": "雨傘、蘑菇、檯燈…全部畫成上寬下窄",
+      "items": [
+        { "name": "雨傘", "hint": "弧頂加長柄與彎勾握把。" },
+        { "name": "蘑菇", "hint": "圓蓋加短粗柄。" },
+        { "name": "香菇", "hint": "圓蓋加白色短柄。" },
+        { "name": "金針菇", "hint": "細小圓帽加長柄一束。" },
+        { "name": "檯燈", "hint": "燈罩＋彎曲支架＋底座。" },
+        { "name": "立燈", "hint": "高燈罩加細長立柱。" },
+        { "name": "高腳杯", "hint": "杯口大，細腳加圓底。" },
+        { "name": "獎盃", "hint": "杯體寬，雙耳加底座。" },
+        { "name": "獎牌", "hint": "圓盤加緞帶。" },
+        { "name": "聖誕樹", "hint": "三角錐加底座與裝飾。" },
+        { "name": "冰淇淋甜筒", "hint": "圓球冰淇淋加三角錐筒。" },
+        { "name": "火山", "hint": "梯形山體加噴發頂口。" },
+        { "name": "鐘", "hint": "梯形主體加吊環或頂蓋。" },
+        { "name": "鐵塔", "hint": "底寬上窄，鏤空格網。" },
+        { "name": "煙囪", "hint": "細長方塔加冒煙。" },
+        { "name": "燈塔", "hint": "圓柱加上方燈室與光束。" },
+        { "name": "漏斗", "hint": "倒三角加細出口。" },
+        { "name": "路燈", "hint": "細長桿加上方彎曲燈頭。" },
+        { "name": "樹", "hint": "圓蓬樹冠加樹幹。" },
+        { "name": "椰子樹", "hint": "細長幹加頂端羽狀葉。" },
+        { "name": "陀螺", "hint": "圓錐尖底加上方握柄。" },
+        { "name": "金字塔", "hint": "三角錐加方形底。" },
+        { "name": "帳篷", "hint": "三角形加門簾。" },
+        { "name": "斗笠", "hint": "扁圓錐草帽。" },
+        { "name": "派對帽", "hint": "三角錐加彈性繩。" },
+        { "name": "皇冠", "hint": "弧形帶尖角與寶石。" },
+        { "name": "巫師帽", "hint": "細長三角錐加寬邊。" },
+        { "name": "草莓", "hint": "倒三角紅色加綠葉冠。" },
+        { "name": "鬱金香", "hint": "杯狀花瓣加細長莖葉。" },
+        { "name": "鈴蘭", "hint": "細莖加多顆鐘形小花。" }
+      ]
+    },
+    {
+      "id": "bottle",
+      "label": "瓶罐類",
+      "desc": "水瓶、花瓶、奶瓶…全部畫成一個瓶",
+      "items": [
+        { "name": "水瓶", "hint": "圓柱瓶身加旋轉瓶蓋。" },
+        { "name": "保溫瓶", "hint": "粗圓柱加按壓蓋或飲口。" },
+        { "name": "奶瓶", "hint": "瓶身加奶嘴與刻度。" },
+        { "name": "花瓶", "hint": "腰身曲線，瓶口較寬。" },
+        { "name": "沙漏", "hint": "兩個三角形相對連接。" },
+        { "name": "醬油瓶", "hint": "細長瓶加細出口。" },
+        { "name": "醋瓶", "hint": "細頸瓶加標籤。" },
+        { "name": "酒瓶", "hint": "細長頸加圓肩瓶身。" },
+        { "name": "紅酒杯", "hint": "球形杯加細腳。" },
+        { "name": "啤酒杯", "hint": "粗大杯加把手與泡沫。" },
+        { "name": "可樂瓶", "hint": "曲線瓶身加波浪標籤。" },
+        { "name": "點滴瓶", "hint": "倒掛瓶加垂吊軟管。" },
+        { "name": "香水瓶", "hint": "方形瓶身加噴霧頭。" },
+        { "name": "調味罐", "hint": "矮胖瓶加洞洞蓋。" },
+        { "name": "胡椒罐", "hint": "高圓柱加洞洞蓋。" },
+        { "name": "保鮮罐", "hint": "透明罐加密封扣。" },
+        { "name": "玻璃杯", "hint": "直筒透明，無握把。" },
+        { "name": "馬克杯", "hint": "圓柱加 C 形把手。" },
+        { "name": "茶杯", "hint": "矮圓杯加小把手與杯盤。" },
+        { "name": "茶壺", "hint": "圓肚加壺嘴與把手。" },
+        { "name": "燒杯", "hint": "直筒加尖嘴與刻度。" },
+        { "name": "錐形瓶", "hint": "倒三角加細頸。" },
+        { "name": "試管", "hint": "細長圓底管。" },
+        { "name": "藥罐", "hint": "矮圓罐加旋轉蓋。" },
+        { "name": "牙膏", "hint": "扁長軟管加旋蓋。" },
+        { "name": "洗髮精", "hint": "高瓶加按壓頭。" },
+        { "name": "醬料瓶", "hint": "倒三角加擠壓嘴。" },
+        { "name": "蜂蜜瓶", "hint": "六角胖瓶加標籤。" },
+        { "name": "暖水袋", "hint": "扁葫蘆狀加蓋。" },
+        { "name": "燈泡", "hint": "球形上半透明加金屬底。" }
+      ]
+    },
+    {
+      "id": "flat",
+      "label": "扁平類",
+      "desc": "盤子、書本、CD…全部畫成一個扁",
+      "items": [
+        { "name": "盤子", "hint": "扁圓加邊緣。" },
+        { "name": "書本", "hint": "長方加書脊與書頁。" },
+        { "name": "雜誌", "hint": "扁長方加封面標題。" },
+        { "name": "筆記本", "hint": "長方加螺旋環。" },
+        { "name": "字典", "hint": "厚長方加切口。" },
+        { "name": "信封", "hint": "長方加 V 形封口。" },
+        { "name": "明信片", "hint": "長方加郵票框。" },
+        { "name": "照片", "hint": "長方加白邊。" },
+        { "name": "相框", "hint": "外框加掛繩。" },
+        { "name": "撲克牌", "hint": "長方圓角加數字花色。" },
+        { "name": "悠遊卡", "hint": "長方圓角加圖案。" },
+        { "name": "信用卡", "hint": "長方圓角加晶片。" },
+        { "name": "CD", "hint": "圓盤中間有洞。" },
+        { "name": "黑膠唱片", "hint": "圓盤帶溝紋與標籤。" },
+        { "name": "披薩", "hint": "圓加切片與配料。" },
+        { "name": "煎餅", "hint": "圓厚加邊緣焦色。" },
+        { "name": "煎蛋", "hint": "白圓加中央黃色。" },
+        { "name": "冰箱貼", "hint": "小圓盤加圖案。" },
+        { "name": "硬幣", "hint": "小圓盤加面值。" },
+        { "name": "鈕扣", "hint": "圓盤加四個小洞。" },
+        { "name": "海綿", "hint": "長方多孔。" },
+        { "name": "肥皂", "hint": "圓角長方塊。" },
+        { "name": "巧克力", "hint": "長方分格塊。" },
+        { "name": "土司", "hint": "方塊加焦邊。" },
+        { "name": "餅乾", "hint": "圓加凹點紋。" },
+        { "name": "手機", "hint": "長方加螢幕與相機。" },
+        { "name": "平板", "hint": "大長方加螢幕。" },
+        { "name": "筆電", "hint": "兩片長方折疊。" },
+        { "name": "鍵盤", "hint": "長方加按鍵格。" },
+        { "name": "滑鼠墊", "hint": "扁方加圓角。" }
+      ]
+    },
+    {
+      "id": "cube",
+      "label": "方塊類",
+      "desc": "箱子、骰子、禮物…全部畫成一個方塊",
+      "items": [
+        { "name": "禮物盒", "hint": "方塊加蝴蝶結。" },
+        { "name": "紙箱", "hint": "方塊加封口膠帶。" },
+        { "name": "骰子", "hint": "立方體加六面點數。" },
+        { "name": "豆腐", "hint": "白色方塊加切痕。" },
+        { "name": "魔術方塊", "hint": "立方體分九格彩色。" },
+        { "name": "保險箱", "hint": "方塊加旋鈕與門。" },
+        { "name": "便當盒", "hint": "扁方塊加蓋與分隔。" },
+        { "name": "電視", "hint": "厚方塊加螢幕與底座。" },
+        { "name": "冰箱", "hint": "高方塊加雙門與把手。" },
+        { "name": "洗衣機", "hint": "方塊加圓門與按鈕。" },
+        { "name": "微波爐", "hint": "方塊加玻璃門與面板。" },
+        { "name": "音響", "hint": "方塊加喇叭網。" },
+        { "name": "冷氣", "hint": "長方塊加風葉口。" },
+        { "name": "信箱", "hint": "方塊加投信口。" },
+        { "name": "垃圾桶", "hint": "方塊加蓋與腳踏。" },
+        { "name": "音箱", "hint": "方塊加圓喇叭網。" },
+        { "name": "茶几", "hint": "扁方加四腳。" },
+        { "name": "椅子", "hint": "方塊座加靠背與腳。" },
+        { "name": "沙發", "hint": "長方塊加靠墊與扶手。" },
+        { "name": "床", "hint": "長方塊加枕頭與被子。" },
+        { "name": "書架", "hint": "高方塊加分層。" },
+        { "name": "鋼琴", "hint": "長方塊加黑白鍵盤。" },
+        { "name": "手提箱", "hint": "扁方塊加把手與輪。" },
+        { "name": "公事包", "hint": "扁方塊加把手與鎖。" },
+        { "name": "電梯", "hint": "高方塊加門與按鈕。" },
+        { "name": "計程車", "hint": "方塊車加車頂燈。" },
+        { "name": "公車", "hint": "長方塊加多車窗。" },
+        { "name": "貨櫃", "hint": "長方塊加波浪鋼板。" },
+        { "name": "麻將", "hint": "小方塊加數字花色。" },
+        { "name": "肥皂盒", "hint": "扁方塊加蓋。" }
+      ]
+    },
+    {
+      "id": "ring",
+      "label": "環形類",
+      "desc": "戒指、手環、輪胎…全部畫成一個圈",
+      "items": [
+        { "name": "戒指", "hint": "圓環加寶石。" },
+        { "name": "手環", "hint": "粗圓環。" },
+        { "name": "手鐲", "hint": "扁圓環貼手腕。" },
+        { "name": "項圈", "hint": "圓環貼脖。" },
+        { "name": "耳環", "hint": "小圓環加耳針。" },
+        { "name": "輪胎", "hint": "粗圓環加胎紋。" },
+        { "name": "方向盤", "hint": "圓環加三輻條。" },
+        { "name": "救生圈", "hint": "粗環加紅白條紋。" },
+        { "name": "游泳圈", "hint": "粗環有充氣感。" },
+        { "name": "甜甜圈", "hint": "圓環加糖霜。" },
+        { "name": "貝果", "hint": "厚圓環加芝麻。" },
+        { "name": "金箍", "hint": "金色細環。" },
+        { "name": "光環", "hint": "頭頂的細圓環。" },
+        { "name": "馬桶圈", "hint": "橢圓環加蓋。" },
+        { "name": "鎖頭環", "hint": "粗圓環加開口。" },
+        { "name": "鑰匙圈", "hint": "圓環串多支鑰匙。" },
+        { "name": "圍棋", "hint": "黑白圓子。" },
+        { "name": "輪盤", "hint": "圓環分多色格。" },
+        { "name": "羅盤", "hint": "圓環加指針與刻度。" },
+        { "name": "紙膠帶", "hint": "圓環加捲紙。" },
+        { "name": "膠帶", "hint": "圓環加透明膠。" },
+        { "name": "毛線", "hint": "圓環纏繞絨線。" },
+        { "name": "髮圈", "hint": "彈性圓環。" },
+        { "name": "搖呼拉圈", "hint": "大圓環適合腰圍。" },
+        { "name": "投籃框", "hint": "圓環加籃網。" },
+        { "name": "套圈", "hint": "細圓環。" },
+        { "name": "迴紋針", "hint": "雙環迂迴鐵絲。" },
+        { "name": "水管接頭", "hint": "粗圓環加螺紋。" },
+        { "name": "鼓圈", "hint": "圓環加鼓皮。" },
+        { "name": "鈸", "hint": "圓盤加中央凸起。" }
+      ]
+    },
+    {
+      "id": "heart",
+      "label": "心形／弧形類",
+      "desc": "心、葉子、貝殼…全部畫成一顆心",
+      "items": [
+        { "name": "愛心", "hint": "上雙弧下尖。" },
+        { "name": "撲克紅心", "hint": "扁愛心填紅。" },
+        { "name": "桃子", "hint": "雙弧加分溝與葉。" },
+        { "name": "蘋果剖面", "hint": "心形剖面加籽。" },
+        { "name": "雞心", "hint": "尖端朝下加血管。" },
+        { "name": "草莓", "hint": "心形紅果加綠葉冠。" },
+        { "name": "葉子", "hint": "心形葉加葉脈。" },
+        { "name": "葡萄葉", "hint": "心形分裂葉。" },
+        { "name": "貝殼", "hint": "扇形加放射條紋。" },
+        { "name": "扇貝", "hint": "扇形殼加波浪邊。" },
+        { "name": "蝙蝠", "hint": "雙弧翼加身體。" },
+        { "name": "蝴蝶結", "hint": "雙弧蝶翼加中央結。" },
+        { "name": "屁股", "hint": "雙圓臀。" },
+        { "name": "嘴唇", "hint": "雙弧上唇加飽滿下唇。" },
+        { "name": "氣球愛心", "hint": "心形氣球加線。" },
+        { "name": "心形巧克力", "hint": "立體心形包裝。" },
+        { "name": "心形枕頭", "hint": "心形布偶加蕾絲。" },
+        { "name": "心形戒指", "hint": "心形寶石加戒環。" },
+        { "name": "情人卡片", "hint": "心形折卡。" },
+        { "name": "羽毛", "hint": "弧形葉脈中央。" },
+        { "name": "西洋梨", "hint": "葫蘆形加蒂。" },
+        { "name": "茄子", "hint": "弧形紫色加蒂。" },
+        { "name": "葫蘆", "hint": "雙圓相連。" },
+        { "name": "酪梨", "hint": "梨形綠色加籽。" },
+        { "name": "提子", "hint": "弧形紫珠串。" }
+      ]
+    },
+    {
+      "id": "star",
+      "label": "星形／放射類",
+      "desc": "星星、太陽、雪花…全部畫成放射狀",
+      "items": [
+        { "name": "星星", "hint": "五角星。" },
+        { "name": "雪花", "hint": "六角放射加分支。" },
+        { "name": "太陽", "hint": "圓加放射線芒。" },
+        { "name": "海星", "hint": "五角厚實加紋路。" },
+        { "name": "星形貼紙", "hint": "黃色五角加眼睛。" },
+        { "name": "煙火", "hint": "中央亮點加放射線。" },
+        { "name": "風車", "hint": "四片旋轉葉。" },
+        { "name": "電風扇", "hint": "圓網加三葉。" },
+        { "name": "齒輪", "hint": "圓加外緣齒。" },
+        { "name": "車輪", "hint": "圓加放射輻條。" },
+        { "name": "腳踏車輪", "hint": "細輻條多根。" },
+        { "name": "蜘蛛網", "hint": "中心加放射絲。" },
+        { "name": "蜘蛛", "hint": "圓身加八腳。" },
+        { "name": "螃蟹", "hint": "扁身加八腳兩鰲。" },
+        { "name": "海葵", "hint": "中心加多觸手。" },
+        { "name": "水母", "hint": "傘狀加垂飄觸手。" },
+        { "name": "章魚", "hint": "圓頭加八觸鬚。" },
+        { "name": "雪人", "hint": "圓球疊加圍巾。" },
+        { "name": "椰子", "hint": "三孔椰殼。" },
+        { "name": "向日葵", "hint": "圓盤加放射花瓣。" },
+        { "name": "雛菊", "hint": "黃心加白色花瓣。" },
+        { "name": "花朵", "hint": "中心加多瓣。" },
+        { "name": "玫瑰", "hint": "螺旋花瓣。" },
+        { "name": "火焰", "hint": "尖端火舌放射。" },
+        { "name": "水滴爆裂", "hint": "中心圓加飛濺。" }
+      ]
+    },
+    {
+      "id": "animal",
+      "label": "動物剪影類",
+      "desc": "貓、狗、兔子…全部畫成動物剪影",
+      "items": [
+        { "name": "貓", "hint": "三角耳加長尾。" },
+        { "name": "狗", "hint": "圓臉加長舌。" },
+        { "name": "兔子", "hint": "長耳加圓臉。" },
+        { "name": "老鼠", "hint": "圓耳加細長尾。" },
+        { "name": "倉鼠", "hint": "圓胖加短尾。" },
+        { "name": "松鼠", "hint": "蓬鬆大尾巴。" },
+        { "name": "刺蝟", "hint": "圓身加刺。" },
+        { "name": "熊", "hint": "圓耳加圓胖身。" },
+        { "name": "貓熊", "hint": "黑白塊加圓耳。" },
+        { "name": "無尾熊", "hint": "圓耳加大鼻。" },
+        { "name": "狐狸", "hint": "尖耳加蓬尾。" },
+        { "name": "狼", "hint": "尖耳加長吻。" },
+        { "name": "獅子", "hint": "圓臉加鬃毛。" },
+        { "name": "老虎", "hint": "圓臉加條紋。" },
+        { "name": "豹", "hint": "斑點圓臉。" },
+        { "name": "斑馬", "hint": "馬身加黑白條紋。" },
+        { "name": "馬", "hint": "長臉加鬃毛。" },
+        { "name": "牛", "hint": "彎角加四蹄。" },
+        { "name": "羊", "hint": "捲毛加彎角。" },
+        { "name": "豬", "hint": "圓鼻加捲尾。" },
+        { "name": "雞", "hint": "尖喙加雞冠。" },
+        { "name": "鴨", "hint": "扁喙加蹼足。" },
+        { "name": "企鵝", "hint": "黑白直立加翼。" },
+        { "name": "鳥", "hint": "尖喙加翼。" },
+        { "name": "貓頭鷹", "hint": "圓臉加大眼。" },
+        { "name": "魚", "hint": "流線身加尾鰭。" },
+        { "name": "鯨魚", "hint": "巨大身加噴水。" },
+        { "name": "海豚", "hint": "流線身加背鰭。" },
+        { "name": "蝸牛", "hint": "螺旋殼加觸角。" },
+        { "name": "烏龜", "hint": "厚殼加四肢頭。" },
+        { "name": "青蛙", "hint": "圓眼加長腿。" },
+        { "name": "蛇", "hint": "彎曲長身。" },
+        { "name": "鯊魚", "hint": "尖鼻加三角背鰭。" },
+        { "name": "蝴蝶", "hint": "雙翅加觸鬚。" },
+        { "name": "蜻蜓", "hint": "細身加四透翼。" }
+      ]
+    }
+  ]
+}
+</script>
+
+<script>
+// ====================== 題庫載入（從 inline JSON / 也可從 questions.json fetch）======================
+let BANK = {};
+let CATEGORIES = [];
+
+function loadBankFromInline() {
+  try {
+    const raw = document.getElementById("question-bank").textContent;
+    const data = JSON.parse(raw);
+    CATEGORIES = data.categories;
+    BANK = {};
+    data.categories.forEach(cat => {
+      BANK[cat.id] = cat.items;
+    });
+    BANK.mixed = data.categories.flatMap(cat => cat.items);
+    return true;
+  } catch (e) {
+    console.error("載入題庫失敗:", e);
+    return false;
+  }
+}
+
+async function tryFetchExternalBank() {
+  // 如果頁面是用 http(s) 開的，試著從 questions.json 讀最新版
+  if (location.protocol === "file:") return false;
+  try {
+    const res = await fetch("questions.json", { cache: "no-store" });
+    if (!res.ok) return false;
+    const data = await res.json();
+    CATEGORIES = data.categories;
+    BANK = {};
+    data.categories.forEach(cat => { BANK[cat.id] = cat.items; });
+    BANK.mixed = data.categories.flatMap(cat => cat.items);
+    console.log("已從 questions.json 載入最新題庫");
+    return true;
+  } catch (e) {
+    console.warn("外部 questions.json 讀取失敗，沿用內建題庫", e);
+    return false;
+  }
+}
+
+function renderCategoryOptions() {
+  const sel = document.getElementById("category");
+  if (!sel) return;
+  sel.innerHTML = "";
+  CATEGORIES.forEach(cat => {
+    const opt = document.createElement("option");
+    opt.value = cat.id;
+    opt.textContent = `${cat.label}（${cat.desc}）`;
+    sel.appendChild(opt);
+  });
+  // 加上 mixed 選項
+  const mix = document.createElement("option");
+  mix.value = "mixed";
+  mix.textContent = "🎲 全部混合（綜合考驗）";
+  sel.appendChild(mix);
+}
+
+loadBankFromInline();
+// DOM ready 後立即填入下拉選單
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", renderCategoryOptions);
+} else {
+  renderCategoryOptions();
+}
+// 啟動時嘗試 fetch 外部 JSON（只在 http(s) 環境）
+tryFetchExternalBank().then(updated => {
+  if (updated) renderCategoryOptions();
+});
+
+
+// ====================== State ======================
+const state = {
+  players: 3,
+  playerNames: [],
+  questions: [],
+  questionCount: 15,
+  intervalMs: 2000,
+  category: "round",
+  useTTS: true,
+  shuffleAnswer: true,
+  answerOrder: [],     // 解答順序（題目 index 列表）
+  answerAssign: [],    // 每輪指派的選手 index
+  scores: [],          // [[per-question per-player]]
+  scoreMatrix: [],     // scoreMatrix[playerIdx] = total
+  currentAnswerIdx: 0
+};
+
+// ====================== Helpers ======================
+const $ = (id) => document.getElementById(id);
+const defaultName = (i) => `選手 ${String.fromCharCode(65 + i)}`;
+const playerName = (i) => state.playerNames[i] || defaultName(i);
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// 從題庫隨機抽 N 題
+function pickQuestions(category, n) {
+  const pool = BANK[category] || BANK.round;
+  return shuffle(pool).slice(0, n);
+}
+
+// 產生「每位選手分到題數盡量平均」的指派
+function assignAnswers(questionCount, playerCount) {
+  const assign = [];
+  for (let i = 0; i < questionCount; i++) assign.push(i % playerCount);
+  return shuffle(assign);
+}
+
+// ====================== TTS ======================
+let voicesCache = [];
+let chosenVoice = null;
+let ttsUnlocked = false;
+
+function dbg(msg) {
+  const el = $("debugLog");
+  if (!el) return;
+  el.style.display = "block";
+  const ts = new Date().toLocaleTimeString();
+  el.textContent += `[${ts}] ${msg}\n`;
+  el.scrollTop = el.scrollHeight;
+  console.log("[TTS]", msg);
+}
+
+function pickBestVoice() {
+  if (!voicesCache.length) return null;
+  const order = [
+    v => /zh[-_]TW/i.test(v.lang),
+    v => /zh[-_]HK/i.test(v.lang),
+    v => /zh[-_]CN/i.test(v.lang),
+    v => /^zh/i.test(v.lang),
+    v => /Mei-Jia|Sin-ji|Ting-Ting|Yu-shu|Tingting/i.test(v.name)
+  ];
+  for (const test of order) {
+    const v = voicesCache.find(test);
+    if (v) return v;
+  }
+  return voicesCache[0] || null;
+}
+
+function refreshVoices() {
+  if (!('speechSynthesis' in window)) return;
+  voicesCache = window.speechSynthesis.getVoices();
+  if (!chosenVoice || !voicesCache.includes(chosenVoice)) {
+    chosenVoice = pickBestVoice();
+  }
+  updateVoiceList();
+  updateVoiceStatus();
+}
+
+function updateVoiceList() {
+  const sel = $("voiceSelect");
+  if (!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = "";
+  if (!voicesCache.length) {
+    const opt = document.createElement("option");
+    opt.textContent = "（尚未載入）";
+    sel.appendChild(opt);
+    return;
+  }
+  voicesCache.forEach((v, i) => {
+    const opt = document.createElement("option");
+    opt.value = String(i);
+    opt.textContent = `${v.name} — ${v.lang}${v.default ? " (預設)" : ""}`;
+    sel.appendChild(opt);
+  });
+  // 預選當前 chosenVoice
+  if (chosenVoice) {
+    const idx = voicesCache.indexOf(chosenVoice);
+    if (idx >= 0) sel.value = String(idx);
+  } else if (prev) {
+    sel.value = prev;
+  }
+}
+
+function updateVoiceStatus() {
+  const el = $("voiceStatus");
+  if (!el) return;
+  if (!('speechSynthesis' in window)) {
+    el.textContent = "此瀏覽器不支援語音播報";
+    el.className = "voice-status warn";
+    return;
+  }
+  if (!voicesCache.length) {
+    el.textContent = "語音載入中…按一下「測試中文」會強制載入";
+    el.className = "voice-status warn";
+    return;
+  }
+  if (chosenVoice) {
+    el.textContent = `已選用：${chosenVoice.name} (${chosenVoice.lang}) · 共 ${voicesCache.length} 個可用`;
+    el.className = "voice-status ok";
+  } else {
+    el.textContent = `共 ${voicesCache.length} 個語音，未自動選定`;
+    el.className = "voice-status warn";
+  }
+}
+
+if ('speechSynthesis' in window) {
+  refreshVoices();
+  window.speechSynthesis.onvoiceschanged = refreshVoices;
+  setTimeout(refreshVoices, 300);
+  setTimeout(refreshVoices, 1000);
+  setTimeout(refreshVoices, 2500);
+}
+
+function unlockTTS() {
+  // 不再 fake speak，cancel/speak 太密集會讓 Chrome 卡住
+  ttsUnlocked = true;
+}
+
+// Chrome 防卡保險：speak 後沒 onstart 就強制重啟引擎
+let lastSpeakAt = 0;
+let lastStartAt = 0;
+function watchdogReset() {
+  const synth = window.speechSynthesis;
+  // 距離 speak 已超過 1.5 秒卻沒 start，引擎卡住了
+  if (lastSpeakAt > lastStartAt && Date.now() - lastSpeakAt > 1500 && synth.speaking) {
+    dbg("⚠ TTS 卡住，強制 cancel/resume");
+    synth.cancel();
+    setTimeout(() => synth.resume(), 50);
+  }
+}
+
+function speak(text, opts = {}) {
+  if (!state.useTTS) { dbg("speak skipped: TTS disabled"); return; }
+  if (!('speechSynthesis' in window)) { dbg("speak skipped: no synth"); return; }
+  const synth = window.speechSynthesis;
+  try {
+    if (synth.paused) synth.resume();
+    // 只在真的在唸時才 cancel
+    if (synth.speaking || synth.pending) synth.cancel();
+
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = opts.lang || (chosenVoice ? chosenVoice.lang : 'zh-TW');
+    u.rate = opts.rate ?? 1.0;
+    u.pitch = 1.0;
+    u.volume = 1.0;
+    if (chosenVoice) u.voice = chosenVoice;
+    u.onstart = () => { lastStartAt = Date.now(); dbg(`▶ start: "${text.slice(0,20)}" voice=${u.voice?.name || '?'} lang=${u.lang}`); };
+    u.onend = () => dbg(`✓ end: "${text.slice(0,20)}"`);
+    u.onerror = (e) => dbg(`✗ error: ${e.error || 'unknown'}`);
+
+    synth.speak(u);
+    lastSpeakAt = Date.now();
+    setTimeout(watchdogReset, 1600);
+    dbg(`speak() queued: "${text.slice(0,20)}" speaking=${synth.speaking} pending=${synth.pending}`);
+  } catch (e) {
+    dbg("speak() exception: " + e.message);
+  }
+}
+
+// Chrome 有個 bug：閒置 ~15 秒後 TTS 引擎會自我暫停。每 10 秒 ping 一下保持活著
+setInterval(() => {
+  const synth = window.speechSynthesis;
+  if (synth && synth.speaking) {
+    synth.pause(); synth.resume();
+  }
+}, 10000);
+
+function speakDirect(text, lang = "zh-TW") {
+  // 純粹直接 speak，不做任何 cancel/狀態檢查 — 用於 user gesture 內最穩
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = lang;
+  u.rate = 1.0;
+  u.volume = 1.0;
+  if (chosenVoice && lang === "zh-TW") u.voice = chosenVoice;
+  u.onstart = () => { lastStartAt = Date.now(); dbg(`▶ direct start: ${text.slice(0,20)}`); };
+  u.onend = () => dbg(`✓ direct end`);
+  u.onerror = (e) => dbg(`✗ direct error: ${e.error || 'unknown'}`);
+  window.speechSynthesis.speak(u);
+  lastSpeakAt = Date.now();
+  dbg(`speakDirect: ${text.slice(0,20)} speaking=${window.speechSynthesis.speaking}`);
+}
+
+function withSpeakingBadge(btn, originalText, durationMs = 3500) {
+  if (!btn) return;
+  const orig = originalText ?? btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "🔊 播放中…";
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.textContent = orig;
+  }, durationMs);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  $("testVoiceBtn")?.addEventListener("click", (e) => {
+    refreshVoices();
+    speakDirect("語音測試，一二三", "zh-TW");
+    withSpeakingBadge(e.currentTarget, "測試中文", 3500);
+  });
+  $("testEnBtn")?.addEventListener("click", (e) => {
+    refreshVoices();
+    speakDirect("Hello, this is a voice test.", "en-US");
+    withSpeakingBadge(e.currentTarget, "測試英文", 3500);
+  });
+  $("testBeepBtn")?.addEventListener("click", () => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = 660;
+      gain.gain.value = 0.2;
+      osc.start();
+      osc.stop(ctx.currentTime + 0.4);
+      dbg(`Beep 660Hz 播放 0.4 秒（state=${ctx.state}）`);
+    } catch (e) { dbg("Beep 失敗: " + e.message); }
+  });
+  $("debugBtn")?.addEventListener("click", () => {
+    refreshVoices();
+    dbg(`=== ${voicesCache.length} voices ===`);
+    voicesCache.forEach((v, i) => {
+      dbg(`${i}. ${v.name} | ${v.lang} | local=${v.localService} | default=${v.default}`);
+    });
+    dbg(`speaking=${window.speechSynthesis.speaking} paused=${window.speechSynthesis.paused} pending=${window.speechSynthesis.pending}`);
+  });
+  $("voiceSelect")?.addEventListener("change", (e) => {
+    const idx = parseInt(e.target.value);
+    if (!isNaN(idx) && voicesCache[idx]) {
+      chosenVoice = voicesCache[idx];
+      updateVoiceStatus();
+      dbg(`手動選擇語音: ${chosenVoice.name}`);
+    }
+  });
+});
+
+// ====================== 參賽者名稱快取（localStorage）======================
+const STORAGE_KEY_NAMES = "speedDraw.playerNames";
+const STORAGE_KEY_COUNT = "speedDraw.playerCount";
+const STORAGE_KEY_PREFS = "speedDraw.prefs";
+
+function loadCachedNames() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_NAMES);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function saveCachedNames(names) {
+  try { localStorage.setItem(STORAGE_KEY_NAMES, JSON.stringify(names)); } catch {}
+}
+
+function loadCachedPrefs() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_PREFS);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+function saveCachedPrefs(prefs) {
+  try { localStorage.setItem(STORAGE_KEY_PREFS, JSON.stringify(prefs)); } catch {}
+}
+
+function collectCurrentNames() {
+  return Array.from($("playerNames").querySelectorAll("input")).map(i => i.value.trim());
+}
+
+// ====================== Phase: Setup → Start ======================
+function renderPlayerNameInputs() {
+  const wrap = $("playerNames");
+  const count = clamp(parseInt($("playerCount").value) || 3, 2, 10);
+  // 優先使用目前輸入值，其次使用 localStorage 快取
+  const current = Array.from(wrap.querySelectorAll("input")).map(i => i.value);
+  const cached = loadCachedNames();
+  wrap.innerHTML = "";
+  for (let i = 0; i < count; i++) {
+    const input = document.createElement("input");
+    input.type = "text";
+    input.placeholder = defaultName(i);
+    input.value = current[i] || cached[i] || "";
+    input.maxLength = 12;
+    input.addEventListener("input", () => {
+      saveCachedNames(collectCurrentNames());
+    });
+    wrap.appendChild(input);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  // 還原上次的人數
+  const cachedCount = parseInt(localStorage.getItem(STORAGE_KEY_COUNT));
+  if (!isNaN(cachedCount) && cachedCount >= 2 && cachedCount <= 10) {
+    $("playerCount").value = String(cachedCount);
+  }
+  // 還原其他偏好
+  const prefs = loadCachedPrefs();
+  if (prefs.questionCount) $("questionCount").value = prefs.questionCount;
+  if (prefs.intervalSec) $("intervalSec").value = prefs.intervalSec;
+  if (prefs.answerSec) $("answerSec").value = prefs.answerSec;
+  if (prefs.maxWrongs != null) $("maxWrongs").value = prefs.maxWrongs;
+  if (typeof prefs.useTTS === "boolean") $("useTTS").checked = prefs.useTTS;
+  if (typeof prefs.shuffleAnswer === "boolean") $("shuffleAnswer").checked = prefs.shuffleAnswer;
+  if (prefs.category) {
+    // 等下拉選單渲染完再 set
+    setTimeout(() => {
+      const sel = $("category");
+      if ([...sel.options].some(o => o.value === prefs.category)) {
+        sel.value = prefs.category;
+      }
+    }, 50);
+  }
+
+  renderPlayerNameInputs();
+  $("playerCount").addEventListener("input", () => {
+    localStorage.setItem(STORAGE_KEY_COUNT, $("playerCount").value);
+    renderPlayerNameInputs();
+  });
+  $("playerCount").addEventListener("change", renderPlayerNameInputs);
+});
+
+$("startBtn").addEventListener("click", startGame);
+$("restartBtn").addEventListener("click", () => location.reload());
+
+async function startGame() {
+  state.players = clamp(parseInt($("playerCount").value) || 3, 2, 10);
+  state.questionCount = clamp(parseInt($("questionCount").value) || 15, 3, 30);
+  state.intervalMs = clamp(parseInt($("intervalSec").value) || 2, 1, 10) * 1000;
+  state.answerSec = clamp(parseInt($("answerSec").value) || 10, 3, 60);
+  state.maxWrongs = clamp(parseInt($("maxWrongs").value) || 1, 0, 5);
+  state.category = $("category").value;
+  state.useTTS = $("useTTS").checked;
+  state.shuffleAnswer = $("shuffleAnswer").checked;
+
+  // 讀取自訂姓名
+  const inputs = $("playerNames").querySelectorAll("input");
+  state.playerNames = [];
+  const rawNames = [];
+  for (let i = 0; i < state.players; i++) {
+    const v = (inputs[i]?.value || "").trim();
+    rawNames.push(v);
+    state.playerNames.push(v || defaultName(i));
+  }
+  // 寫回 localStorage
+  saveCachedNames(rawNames);
+  saveCachedPrefs({
+    questionCount: state.questionCount,
+    intervalSec: state.intervalMs / 1000,
+    answerSec: state.answerSec,
+    maxWrongs: state.maxWrongs,
+    category: state.category,
+    useTTS: state.useTTS,
+    shuffleAnswer: state.shuffleAnswer
+  });
+  localStorage.setItem(STORAGE_KEY_COUNT, String(state.players));
+
+  state.questions = pickQuestions(state.category, state.questionCount);
+  state.answerAssign = assignAnswers(state.questions.length, state.players);
+  state.answerOrder = state.shuffleAnswer
+    ? shuffle([...state.questions.keys()])
+    : [...state.questions.keys()];
+  state.scores = state.questions.map(() => Array(state.players).fill(null));
+  state.scoreMatrix = Array(state.players).fill(0);
+  state.currentAnswerIdx = 0;
+  state.stealAttempts = {};
+  state.currentStealer = null;
+
+  // 解鎖 TTS（必須在 user gesture 內）
+  unlockTTS();
+  refreshVoices();
+
+  $("setup").classList.add("hidden");
+  await preStartCountdown();
+  await runQuestionPhase();
+  enterAnswerPhase();
+}
+
+function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
+
+async function preStartCountdown() {
+  const el = $("prestart");
+  const num = $("prestartNum");
+  el.classList.remove("hidden");
+  for (let i = 3; i >= 1; i--) {
+    num.textContent = i;
+    speak(String(i));
+    await sleep(800);
+  }
+  num.textContent = "開始！";
+  speak("開始");
+  await sleep(700);
+  el.classList.add("hidden");
+}
+
+// ====================== Phase: Question ======================
+async function runQuestionPhase() {
+  $("question").classList.remove("hidden");
+  $("qTotal").textContent = state.questions.length;
+  for (let i = 0; i < state.questions.length; i++) {
+    $("qIdx").textContent = i + 1;
+    const q = state.questions[i];
+
+    // 不顯示文字，只播語音
+    speak(q.name);
+
+    // 喇叭 pulse 重啟動畫
+    const pulse = $("speakerPulse");
+    if (pulse) {
+      pulse.style.animation = "none";
+      void pulse.offsetWidth;
+      pulse.style.animation = "";
+    }
+
+    // Countdown bar
+    const fill = $("cdFill");
+    fill.style.transition = "none";
+    fill.style.transform = "scaleX(1)";
+    void fill.offsetWidth;
+    fill.style.transition = `transform ${state.intervalMs}ms linear`;
+    fill.style.transform = "scaleX(0)";
+
+    await sleep(state.intervalMs);
+  }
+  $("question").classList.add("hidden");
+}
+
+// ====================== Phase: Answer ======================
+function enterAnswerPhase() {
+  $("answer").classList.remove("hidden");
+  $("aTotal").textContent = state.answerOrder.length;
+  renderScoreboard();
+  showAnswer(0);
+}
+
+function normalize(s) {
+  return (s || "")
+    .replace(/\s+/g, "")
+    .replace(/[，。！？、,.!?]/g, "")
+    .toLowerCase();
+}
+
+function showAnswer(idx) {
+  stopAnswerTimer();
+  state.currentAnswerIdx = idx;
+  if (idx >= state.answerOrder.length) { showFinal(); return; }
+  const qIdx = state.answerOrder[idx];
+  const q = state.questions[qIdx];
+  const playerIdx = state.answerAssign[idx];
+
+  $("aRound").textContent = idx + 1;
+  $("aPlayer").textContent = playerName(playerIdx);
+  $("aQNum").textContent = qIdx + 1;
+
+  // 重置：隱藏答案，顯示輸入框
+  $("aInputArea").classList.remove("hidden");
+  $("aStealArea").classList.add("hidden");
+  $("aResultArea").classList.add("hidden");
+  $("aInput").value = "";
+  $("aInput").classList.remove("shake");
+  $("aAttempts").innerHTML = "";
+  state.attempts = [];
+  state.wrongCount = 0;
+  $("wrongCount").textContent = "0";
+  $("wrongMax").textContent = String(state.maxWrongs);
+  $("wrongCount").parentElement.classList.remove("danger");
+  setTimeout(() => $("aInput").focus(), 100);
+
+  // 如果這題之前已經評過分，直接顯示結果區（避免回上一題又重新作答）
+  const existing = state.scores[qIdx][playerIdx];
+  if (existing !== null) {
+    showResult(q, existing >= 1 ? "correct" : "gaveup");
+    document.querySelectorAll(".score-btn").forEach(b => {
+      b.classList.remove("active-0", "active-1", "active-2");
+      if (Number(b.dataset.score) === existing) {
+        b.classList.add(`active-${existing}`);
+      }
+    });
+  } else {
+    startAnswerTimer();
+  }
+
+  speak(`請${playerName(playerIdx)}回答第 ${qIdx + 1} 題`);
+}
+
+// ====================== 作答倒數 ======================
+let answerTimerId = null;
+let answerTimerEnd = 0;
+
+function startAnswerTimer() {
+  stopAnswerTimer();
+  const totalMs = state.answerSec * 1000;
+  answerTimerEnd = Date.now() + totalMs;
+  const fill = $("timerFill");
+  fill.style.transition = "none";
+  fill.style.transform = "scaleX(1)";
+  fill.classList.remove("warning", "danger");
+  $("timerSec").textContent = state.answerSec;
+  $("timerSec").parentElement.classList.remove("warning", "danger");
+  void fill.offsetWidth;
+  fill.style.transition = `transform ${totalMs}ms linear, background 0.3s`;
+  fill.style.transform = "scaleX(0)";
+
+  answerTimerId = setInterval(() => {
+    const remain = Math.max(0, answerTimerEnd - Date.now());
+    const sec = Math.ceil(remain / 1000);
+    $("timerSec").textContent = sec;
+    if (sec <= 3 && sec > 0) {
+      $("timerSec").parentElement.classList.add("danger");
+      fill.classList.add("danger");
+    } else if (sec <= 5) {
+      $("timerSec").parentElement.classList.add("warning");
+      fill.classList.add("warning");
+    }
+    if (remain <= 0) {
+      stopAnswerTimer();
+      onTimeUp();
+    }
+  }, 100);
+}
+
+function stopAnswerTimer() {
+  if (answerTimerId) { clearInterval(answerTimerId); answerTimerId = null; }
+}
+
+function onTimeUp() {
+  // 時間到 = 算一次錯誤
+  registerWrong("時間到");
+}
+
+function showResult(q, kind) {
+  $("aInputArea").classList.add("hidden");
+  $("aStealArea").classList.add("hidden");
+  $("aResultArea").classList.remove("hidden");
+  const icon = $("aResultIcon");
+  if (kind === "correct") {
+    icon.textContent = "✓";
+    icon.className = "result-icon correct";
+  } else {
+    icon.textContent = "✗";
+    icon.className = "result-icon gaveup";
+  }
+  $("aAnswer").textContent = q.name;
+  $("aHint").textContent = q.hint || "";
+}
+
+// ====================== 搶答 ======================
+function enterStealMode() {
+  $("aInputArea").classList.add("hidden");
+  $("aResultArea").classList.add("hidden");
+  $("aStealArea").classList.remove("hidden");
+  state.stealAttempts = state.stealAttempts || {};
+  const idx = state.currentAnswerIdx;
+  if (!state.stealAttempts[idx]) state.stealAttempts[idx] = new Set();
+  state.currentStealer = null;
+  $("stealInput").value = "";
+  $("stealInput").classList.add("hidden");
+  $("stealSubmitRow").style.display = "none";
+  renderStealButtons();
+  renderStealAttempts();
+  speak("換人作答");
+}
+
+function renderStealButtons() {
+  const wrap = $("stealButtons");
+  wrap.innerHTML = "";
+  const idx = state.currentAnswerIdx;
+  const mainPlayerIdx = state.answerAssign[idx];
+  const tried = state.stealAttempts[idx] || new Set();
+  for (let i = 0; i < state.players; i++) {
+    if (i === mainPlayerIdx) continue;
+    const btn = document.createElement("button");
+    btn.className = "steal-player-btn";
+    btn.textContent = playerName(i);
+    if (tried.has(i)) {
+      btn.classList.add("disabled");
+    }
+    if (state.currentStealer === i) {
+      btn.classList.add("active");
+    }
+    btn.addEventListener("click", () => {
+      if (tried.has(i)) return;
+      state.currentStealer = i;
+      $("stealInput").classList.remove("hidden");
+      $("stealSubmitRow").style.display = "flex";
+      renderStealButtons();
+      setTimeout(() => $("stealInput").focus(), 80);
+      speak(`請${playerName(i)}作答`);
+    });
+    wrap.appendChild(btn);
+  }
+}
+
+function renderStealAttempts() {
+  const wrap = $("stealAttempts");
+  wrap.innerHTML = "";
+  const idx = state.currentAnswerIdx;
+  const tried = state.stealAttempts[idx] || new Set();
+  tried.forEach(pIdx => {
+    const tag = document.createElement("span");
+    tag.className = "attempt-tag";
+    tag.textContent = playerName(pIdx) + " ✗";
+    wrap.appendChild(tag);
+  });
+}
+
+function submitSteal() {
+  const idx = state.currentAnswerIdx;
+  const qIdx = state.answerOrder[idx];
+  const q = state.questions[qIdx];
+  const stealer = state.currentStealer;
+  if (stealer == null) return;
+  const val = $("stealInput").value.trim();
+  if (!val) return;
+
+  if (normalize(val) === normalize(q.name)) {
+    // 搶答成功 → 該選手 +1
+    setScore(qIdx, stealer, 1);
+    showResult(q, "correct");
+    speak(`${playerName(stealer)}答對了`);
+  } else {
+    // 搶答失敗 → 該選手不能再搶
+    state.stealAttempts[idx].add(stealer);
+    state.currentStealer = null;
+    $("stealInput").value = "";
+    $("stealInput").classList.add("hidden");
+    $("stealSubmitRow").style.display = "none";
+    renderStealButtons();
+    renderStealAttempts();
+    speak("錯");
+    // 如果所有人都搶過了 → 自動揭曉
+    const otherCount = state.players - 1;
+    if (state.stealAttempts[idx].size >= otherCount) {
+      setTimeout(() => {
+        showResult(q, "gaveup");
+        speak(`答案是${q.name}`);
+      }, 600);
+    }
+  }
+}
+
+function cancelSteal() {
+  state.currentStealer = null;
+  $("stealInput").value = "";
+  $("stealInput").classList.add("hidden");
+  $("stealSubmitRow").style.display = "none";
+  renderStealButtons();
+}
+
+function submitAnswer() {
+  const idx = state.currentAnswerIdx;
+  const qIdx = state.answerOrder[idx];
+  const q = state.questions[qIdx];
+  const playerIdx = state.answerAssign[idx];
+  const input = $("aInput");
+  const val = input.value.trim();
+  if (!val) return;
+
+  if (normalize(val) === normalize(q.name)) {
+    // 答對：揭曉答案，自動給 2 分
+    stopAnswerTimer();
+    showResult(q, "correct");
+    setScore(qIdx, playerIdx, 2);
+    document.querySelectorAll(".score-btn").forEach(b => {
+      b.classList.remove("active-0", "active-1", "active-2");
+      if (Number(b.dataset.score) === 2) b.classList.add("active-2");
+    });
+    speak("答對了");
+  } else {
+    registerWrong(val);
+  }
+}
+
+function registerWrong(label) {
+  const idx = state.currentAnswerIdx;
+  const qIdx = state.answerOrder[idx];
+  const playerIdx = state.answerAssign[idx];
+  state.wrongCount = (state.wrongCount || 0) + 1;
+  state.attempts.push(label);
+  renderAttempts();
+  $("wrongCount").textContent = String(state.wrongCount);
+  if (state.wrongCount >= state.maxWrongs) {
+    $("wrongCount").parentElement.classList.add("danger");
+  }
+
+  const input = $("aInput");
+  input.classList.remove("shake");
+  void input.offsetWidth;
+  input.classList.add("shake");
+  input.value = "";
+  speak("錯");
+
+  // 超過容許錯誤次數 → 主答者 0 分，進入換人作答
+  if (state.wrongCount > state.maxWrongs) {
+    stopAnswerTimer();
+    setScore(qIdx, playerIdx, 0);
+    setTimeout(() => {
+      if (state.players <= 1) {
+        showResult(state.questions[qIdx], "gaveup");
+      } else {
+        enterStealMode();
+      }
+    }, 600);
+  } else {
+    input.focus();
+  }
+}
+
+function renderAttempts() {
+  const wrap = $("aAttempts");
+  wrap.innerHTML = "";
+  state.attempts.forEach(t => {
+    const tag = document.createElement("span");
+    tag.className = "attempt-tag";
+    tag.textContent = t;
+    wrap.appendChild(tag);
+  });
+}
+
+function revealAnswer() {
+  // 主答者放棄 → 主答者 0 分，進入換人作答
+  stopAnswerTimer();
+  const idx = state.currentAnswerIdx;
+  const qIdx = state.answerOrder[idx];
+  const playerIdx = state.answerAssign[idx];
+  setScore(qIdx, playerIdx, 0);
+  if (state.players <= 1) {
+    showResult(state.questions[qIdx], "gaveup");
+    return;
+  }
+  enterStealMode();
+}
+
+function setScore(qIdx, playerIdx, score) {
+  const old = state.scores[qIdx][playerIdx];
+  if (old !== null) state.scoreMatrix[playerIdx] -= old;
+  state.scores[qIdx][playerIdx] = score;
+  state.scoreMatrix[playerIdx] += score;
+  renderScoreboard();
+}
+
+document.querySelectorAll(".score-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const score = Number(btn.dataset.score);
+    const idx = state.currentAnswerIdx;
+    const qIdx = state.answerOrder[idx];
+    const playerIdx = state.answerAssign[idx];
+    setScore(qIdx, playerIdx, score);
+    document.querySelectorAll(".score-btn").forEach(b => b.classList.remove("active-0","active-1","active-2"));
+    btn.classList.add(`active-${score}`);
+    setTimeout(() => showAnswer(idx + 1), 500);
+  });
+});
+
+$("aSubmitBtn").addEventListener("click", submitAnswer);
+$("aRevealBtn").addEventListener("click", revealAnswer);
+$("aInput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { e.preventDefault(); submitAnswer(); }
+});
+
+$("stealSubmitBtn").addEventListener("click", submitSteal);
+$("stealCancelBtn").addEventListener("click", cancelSteal);
+$("stealInput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { e.preventDefault(); submitSteal(); }
+});
+$("skipStealBtn").addEventListener("click", () => {
+  // 跳過：揭曉答案後到下一題
+  const idx = state.currentAnswerIdx;
+  const qIdx = state.answerOrder[idx];
+  showResult(state.questions[qIdx], "gaveup");
+  setTimeout(() => showAnswer(idx + 1), 800);
+});
+
+$("nextAnsBtn").addEventListener("click", () => showAnswer(state.currentAnswerIdx + 1));
+$("prevAnsBtn").addEventListener("click", () => {
+  if (state.currentAnswerIdx > 0) showAnswer(state.currentAnswerIdx - 1);
+});
+
+function renderScoreboard() {
+  const wrap = $("scoreboard");
+  wrap.innerHTML = "";
+  for (let i = 0; i < state.players; i++) {
+    const card = document.createElement("div");
+    card.className = "score-card";
+    card.innerHTML = `<div class="name">${playerName(i)}</div><div class="points">${state.scoreMatrix[i]}</div>`;
+    wrap.appendChild(card);
+  }
+}
+
+// ====================== Phase: Final ======================
+function showFinal() {
+  $("answer").classList.add("hidden");
+  $("final").classList.remove("hidden");
+
+  // 排名
+  const ranked = state.scoreMatrix
+    .map((pts, i) => ({ pts, i }))
+    .sort((a, b) => b.pts - a.pts);
+
+  $("winnerName").textContent = playerName(ranked[0].i);
+  speak(`恭喜${playerName(ranked[0].i)}獲勝！`);
+
+  const wrap = $("finalScores");
+  wrap.innerHTML = "";
+  ranked.forEach((r, rank) => {
+    const card = document.createElement("div");
+    card.className = "rank-card" + (rank === 0 ? " first" : "");
+    const medal = rank === 0 ? "🥇" : rank === 1 ? "🥈" : rank === 2 ? "🥉" : `#${rank+1}`;
+    card.innerHTML = `
+      <div class="rank">${medal}</div>
+      <div class="player">${playerName(r.i)}</div>
+      <div class="pts">${r.pts}</div>
+    `;
+    wrap.appendChild(card);
+  });
+}
+</script>
+</body>
+</html>
