@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { storage } from "../lib/storage";
 import { clamp, defaultName } from "../lib/util";
 import { speakDirect, refreshVoices, getChosenVoice, selectVoice, playBeep, getChineseVoices, getAllVoicesScored } from "../lib/tts";
+import CategoryPicker from "./CategoryPicker";
 
 const PASTEL_COLORS = [
   "bg-pink-200", "bg-yellow-200", "bg-green-200", "bg-blue-200",
@@ -19,7 +20,13 @@ export default function Setup({ categories, onStart }) {
   const [intervalSec, setIntervalSec] = useState(cachedPrefs.intervalSec || 2);
   const [answerSec, setAnswerSec] = useState(cachedPrefs.answerSec || 10);
   const [maxWrongs, setMaxWrongs] = useState(cachedPrefs.maxWrongs ?? 1);
-  const [category, setCategory] = useState(cachedPrefs.category || categories[0]?.id || "round");
+  // 多分類混選：陣列存 category id；空陣列代表「全部」
+  const [categoryIds, setCategoryIds] = useState(() => {
+    if (Array.isArray(cachedPrefs.categoryIds)) return cachedPrefs.categoryIds;
+    // 從舊版 cachedPrefs.category 字串遷移
+    if (cachedPrefs.category && cachedPrefs.category !== "mixed") return [cachedPrefs.category];
+    return categories.map(c => c.id); // 預設全選
+  });
   const [useTTS, setUseTTS] = useState(cachedPrefs.useTTS ?? true);
   const [shuffleAnswer, setShuffleAnswer] = useState(cachedPrefs.shuffleAnswer ?? true);
   const [names, setNames] = useState(() => {
@@ -61,7 +68,7 @@ export default function Setup({ categories, onStart }) {
       finalNames.push((names[i] || "").trim() || defaultName(i));
     }
     storage.saveCount(players);
-    storage.savePrefs({ questionCount, intervalSec, answerSec, maxWrongs, category, useTTS, shuffleAnswer });
+    storage.savePrefs({ questionCount, intervalSec, answerSec, maxWrongs, categoryIds, useTTS, shuffleAnswer });
     onStart({
       players,
       playerNames: finalNames,
@@ -69,7 +76,7 @@ export default function Setup({ categories, onStart }) {
       intervalMs: clamp(intervalSec, 1, 10) * 1000,
       answerSec: clamp(answerSec, 3, 60),
       maxWrongs: clamp(maxWrongs, 0, 5),
-      category,
+      categoryIds,
       useTTS,
       shuffleAnswer,
     });
@@ -131,38 +138,13 @@ export default function Setup({ categories, onStart }) {
         </div>
       </Section>
 
-      {/* Category picker */}
+      {/* Category picker (multi-select) */}
       <Section emoji="🎯" title="題目類別">
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setCategory(cat.id)}
-              className={`rounded-2xl p-3 text-left border-2 transition-all ${
-                category === cat.id
-                  ? "bg-coral text-white border-deep shadow-[4px_4px_0_#2d1b4e] scale-[1.02]"
-                  : "bg-white text-deep border-deep/15 hover:border-deep/40 hover:scale-[1.02] shadow-[2px_2px_0_rgba(45,27,78,0.1)]"
-              }`}
-            >
-              <div className="font-black text-sm sm:text-base">{cat.label}</div>
-              <div className={`text-xs mt-1 ${category === cat.id ? "text-white/85" : "text-deep/60"}`}>{cat.desc}</div>
-              <div className={`text-xs mt-1 font-mono ${category === cat.id ? "text-white/70" : "text-deep/40"}`}>
-                {cat.items.length} 題
-              </div>
-            </button>
-          ))}
-          <button
-            onClick={() => setCategory("mixed")}
-            className={`rounded-2xl p-3 text-left border-2 transition-all ${
-              category === "mixed"
-                ? "bg-gradient-to-br from-grape to-coral text-white border-deep shadow-[4px_4px_0_#2d1b4e] scale-[1.02]"
-                : "bg-white text-deep border-deep/15 hover:border-deep/40 hover:scale-[1.02] shadow-[2px_2px_0_rgba(45,27,78,0.1)]"
-            }`}
-          >
-            <div className="font-black text-sm sm:text-base">🎲 全部混合</div>
-            <div className={`text-xs mt-1 ${category === "mixed" ? "text-white/85" : "text-deep/60"}`}>綜合考驗</div>
-          </button>
-        </div>
+        <CategoryPicker
+          categories={categories}
+          selected={categoryIds}
+          onChange={setCategoryIds}
+        />
       </Section>
 
       {/* Quick settings */}
@@ -255,9 +237,11 @@ export default function Setup({ categories, onStart }) {
 
       <div className="text-center mt-8">
         <motion.button
-          whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+          whileHover={categoryIds.length > 0 ? { scale: 1.05 } : {}}
+          whileTap={categoryIds.length > 0 ? { scale: 0.95 } : {}}
           onClick={handleStart}
-          className="btn-pop text-2xl px-12 py-5"
+          disabled={categoryIds.length === 0}
+          className="btn-pop text-2xl px-12 py-5 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           🎮 開始遊戲
         </motion.button>

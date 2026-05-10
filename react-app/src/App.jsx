@@ -21,9 +21,13 @@ export default function App() {
 
   const startGame = (cfg) => {
     setConfig(cfg);
-    const pool = cfg.category === "mixed"
-      ? categories.flatMap(c => c.items)
-      : categories.find(c => c.id === cfg.category)?.items || [];
+    // categoryIds 為陣列；空陣列或 "all" 表示全選
+    const ids = cfg.categoryIds && cfg.categoryIds.length > 0
+      ? cfg.categoryIds
+      : categories.map(c => c.id);
+    const pool = categories
+      .filter(c => ids.includes(c.id))
+      .flatMap(c => c.items);
     const qs = shuffle(pool).slice(0, cfg.questionCount);
     setQuestions(qs);
     const order = cfg.shuffleAnswer
