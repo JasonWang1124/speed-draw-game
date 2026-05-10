@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
-import { speak } from "../lib/tts";
+import { speak, cancelAllSpeech } from "../lib/tts";
 import { normalize } from "../lib/util";
 
 const COLORS = ["#ffb4a2", "#ffd66e", "#b6e2d3", "#a8dadc", "#b388ff", "#ff7a8a", "#ffafcc", "#bde0fe", "#caffbf", "#ffd6a5"];
@@ -38,10 +38,11 @@ export default function AnswerPhase({ config, questions, answerOrder, answerAssi
     setStealActiveIdx(null);
     setResultKind(null);
     setScoredPlayer(null);
+    cancelAllSpeech();
     speak(`請${playerNames[mainPlayerIdx]}回答第 ${qIdx + 1} 題`, { disabled: !useTTS });
     startTimer();
     setTimeout(() => inputRef.current?.focus(), 200);
-    return () => stopTimer();
+    return () => { stopTimer(); cancelAllSpeech(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [round]);
 

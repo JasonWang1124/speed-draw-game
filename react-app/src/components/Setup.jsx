@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { storage } from "../lib/storage";
 import { clamp, defaultName } from "../lib/util";
-import { speakDirect, refreshVoices, getVoices, getChosenVoice, selectVoice, playBeep } from "../lib/tts";
+import { speakDirect, refreshVoices, getChosenVoice, selectVoice, playBeep, getChineseVoices, getAllVoicesScored } from "../lib/tts";
 
 const PASTEL_COLORS = [
   "bg-pink-200", "bg-yellow-200", "bg-green-200", "bg-blue-200",
@@ -27,25 +27,28 @@ export default function Setup({ categories, onStart }) {
     for (let i = 0; i < 10; i++) arr.push(cachedNames[i] || "");
     return arr;
   });
-  const [voiceIdx, setVoiceIdx] = useState(0);
-  const [voices, setVoices] = useState([]);
+  const [voiceList, setVoiceList] = useState([]); // 已排序：高分在前
+  const [chosenVoiceName, setChosenVoiceName] = useState("");
+  const [showAllLangs, setShowAllLangs] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  // 載入語音清單
+  // 載入語音清單（依使用者選擇過濾語言）
   useEffect(() => {
     const update = () => {
       refreshVoices();
-      const list = getVoices();
-      setVoices(list);
+      const list = showAllLangs
+        ? getAllVoicesScored()
+        : getChineseVoices();
+      setVoiceList(list);
       const chosen = getChosenVoice();
-      const idx = list.indexOf(chosen);
-      setVoiceIdx(idx >= 0 ? idx : 0);
+      setChosenVoiceName(chosen?.name || "");
     };
     update();
     const t1 = setTimeout(update, 400);
     const t2 = setTimeout(update, 1500);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, []);
+    const t3 = setTimeout(update, 3500);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  }, [showAllLangs]);
 
   // 即時存名字
   useEffect(() => {
@@ -74,7 +77,8 @@ export default function Setup({ categories, onStart }) {
 
   const testVoice = () => {
     refreshVoices();
-    speakDirect("語音測試，一二三", "zh-TW");
+    // 包含常見的冷僻字，可立即聽出語音引擎涵蓋率
+    speakDirect("速畫紅龜粿、黑輪、貢丸、椪餅", "zh-TW");
   };
 
   return (
@@ -190,23 +194,58 @@ export default function Setup({ categories, onStart }) {
         {showAdvanced && (
           <div className="space-y-3">
             <div>
-              <label className="block text-sm font-bold mb-1">選擇語音</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-sm font-bold">選擇語音（推薦 Google 國語）</label>
+                <label className="text-xs text-deep/60 flex items-center gap-1 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showAllLangs}
+                    onChange={(e) => setShowAllLangs(e.target.checked)}
+                    className="w-4 h-4 accent-coral"
+                  />
+                  顯示全部語音
+                </label>
+              </div>
               <select
-                value={voiceIdx}
+                value={chosenVoiceName}
                 onChange={(e) => {
-                  const idx = parseInt(e.target.value);
-                  setVoiceIdx(idx);
-                  if (voices[idx]) selectVoice(voices[idx]);
+                  const name = e.target.value;
+                  const entry = voiceList.find(({ voice }) => voice.name === name);
+                  if (entry) {
+                    selectVoice(entry.voice);
+                    setChosenVoiceName(name);
+                  }
                 }}
                 className="w-full p-2 rounded-xl border-2 border-deep/15 bg-white"
               >
-                {voices.map((v, i) => (
-                  <option key={i} value={i}>{v.name} — {v.lang}{v.default ? " ★" : ""}</option>
-                ))}
+                {voiceList.length === 0 && (
+                  <option value="">（語音清單載入中⋯）</option>
+                )}
+                {voiceList.map(({ voice, score }, i) => {
+                  const isTop = i === 0 && score >= 700;
+                  const recommended = score >= 700;
+                  return (
+                    <option key={voice.name + voice.lang} value={voice.name}>
+                      {recommended ? "★ " : ""}
+                      {isTop ? "(推薦) " : ""}
+                      {voice.name} — {voice.lang}
+                    </option>
+                  );
+                })}
               </select>
+              {!showAllLangs && voiceList.length === 0 && (
+                <p className="text-xs text-coral/80 mt-1 font-bold">
+                  ⚠️ 偵測不到中文語音，請改用 Chrome / Edge，或勾「顯示全部語音」手動挑選
+                </p>
+              )}
+              {!showAllLangs && voiceList.length > 0 && voiceList[0].score < 700 && (
+                <p className="text-xs text-deep/60 mt-1">
+                  💡 沒找到 Google / Microsoft 線上語音；建議用 Chrome 或 Edge 取得最佳發音
+                </p>
+              )}
             </div>
             <div className="flex gap-2 flex-wrap">
-              <button onClick={testVoice} className="btn-soft text-sm">🔊 測試中文</button>
+              <button onClick={testVoice} className="btn-soft text-sm">🔊 測試中文難字</button>
               <button onClick={() => { refreshVoices(); speakDirect("Voice test, one two three", "en-US"); }} className="btn-soft text-sm">🔉 測試英文</button>
               <button onClick={() => playBeep()} className="btn-soft text-sm">🎵 測試 Beep</button>
             </div>

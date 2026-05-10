@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { speak } from "../lib/tts";
+import { speak, cancelAllSpeech } from "../lib/tts";
 import { sleep } from "../lib/util";
 
 export default function QuestionPhase({ questions, intervalMs, useTTS, onDone }) {
@@ -30,7 +30,10 @@ export default function QuestionPhase({ questions, intervalMs, useTTS, onDone })
       }
       if (!stoppedRef.current) onDone();
     })();
-    return () => { stoppedRef.current = true; };
+    return () => {
+      stoppedRef.current = true;
+      cancelAllSpeech();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
