@@ -12,7 +12,7 @@ const PASTEL_COLORS = [
   "bg-amber-200", "bg-lime-200",
 ];
 
-export default function Setup({ categories, onStart, onCategoriesChanged }) {
+export default function Setup({ categories, categoriesVersion = 0, onStart, onCategoriesChanged }) {
   const cachedPrefs = useMemo(() => storage.loadPrefs(), []);
   const cachedNames = useMemo(() => storage.loadNames(), []);
 
@@ -150,7 +150,7 @@ export default function Setup({ categories, onStart, onCategoriesChanged }) {
 
       {/* My custom packs */}
       <Section emoji="📝" title="我的題庫（自製）">
-        <MyPacks onChanged={onCategoriesChanged} />
+        <MyPacks onChanged={onCategoriesChanged} externalVersion={categoriesVersion} />
       </Section>
 
       {/* Quick settings */}

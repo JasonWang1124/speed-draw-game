@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   getCustomCategories,
   addCustomCategory,
@@ -12,18 +12,24 @@ import {
   parseJSON,
   parseCSV,
   readFileAsText,
+  buildShareURL,
 } from "../lib/packIO";
 import PackEditor from "./PackEditor";
 
 // 自製題庫管理區（Setup 內的一個 Section）
 // props:
 //   onChanged: () => void   通知 App 重新讀題庫
-export default function MyPacks({ onChanged }) {
+export default function MyPacks({ onChanged, externalVersion = 0 }) {
   const [packs, setPacks] = useState(() => getCustomCategories());
   const [editing, setEditing] = useState(null); // { mode: "add"|"edit", pack }
   const [message, setMessage] = useState(null);  // { type: "ok"|"err", text }
   const fileInputRef = useRef(null);
   const [pendingFile, setPendingFile] = useState(null); // { type: "json"|"csv", text }
+
+  // 外部（App 層）改動 localStorage（如分享匯入）時，重新從 storage 讀取
+  useEffect(() => {
+    setPacks(getCustomCategories());
+  }, [externalVersion]);
 
   const refresh = () => {
     setPacks(getCustomCategories());
@@ -77,6 +83,26 @@ export default function MyPacks({ onChanged }) {
     showMsg("ok", `已匯出「${pack.label}」為 CSV`);
   };
 
+  const handleSharePack = async (pack) => {
+    try {
+      const url = await buildShareURL(pack);
+      // 連結太長提醒
+      if (url.length > 4000) {
+        showMsg("err", `連結超過 ${url.length} 字元，建議改用 JSON 匯出`);
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(url);
+        showMsg("ok", `已複製分享連結（${url.length} 字元）到剪貼簿`);
+      } catch {
+        // 剪貼簿失敗：用 prompt 顯示讓使用者手動複製
+        window.prompt("複製此連結分享給朋友：", url);
+      }
+    } catch (err) {
+      showMsg("err", err.message || "產生分享連結失敗");
+    }
+  };
+
   const handlePickFile = () => fileInputRef.current?.click();
 
   const handleFileChange = async (e) => {
@@ -127,6 +153,7 @@ export default function MyPacks({ onChanged }) {
               pack={p}
               onEdit={() => startEdit(p)}
               onExportCSV={() => handleExportPackCSV(p)}
+              onShare={() => handleSharePack(p)}
             />
           ))}
         </div>
@@ -227,7 +254,7 @@ function CSVImportDialog({ suggestedLabel, onConfirm, onCancel }) {
   );
 }
 
-function PackRow({ pack, onEdit, onExportCSV }) {
+function PackRow({ pack, onEdit, onExportCSV, onShare }) {
   // 用 div 而非 button 避免巢狀 button warning
   return (
     <div
@@ -252,6 +279,13 @@ function PackRow({ pack, onEdit, onExportCSV }) {
           title="匯出為 CSV"
         >
           📤 CSV
+        </button>
+        <button
+          onClick={onShare}
+          className="text-xs font-bold px-2 py-1 rounded-lg bg-deep/10 hover:bg-deep/20"
+          title="複製分享連結"
+        >
+          🔗 分享
         </button>
       </div>
     </div>

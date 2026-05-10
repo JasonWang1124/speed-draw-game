@@ -141,6 +141,94 @@ export function parseCSV(text, { label = "匯入分類", emoji = "📦", desc = 
   return { label, emoji, desc, items };
 }
 
+// ─── URL hash 分享 ────────────────────────────
+// 設計：把單一分類序列化 → 壓縮（簡單 deflate via CompressionStream） → base64url
+// 接收端 reverse 即可。沒有 CompressionStream（舊瀏覽器）時 fallback 到原始 base64
+
+function toBase64Url(bytes) {
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function fromBase64Url(s) {
+  const pad = "=".repeat((4 - (s.length % 4)) % 4);
+  const b64 = s.replace(/-/g, "+").replace(/_/g, "/") + pad;
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
+async function deflate(text) {
+  if (typeof CompressionStream === "undefined") {
+    return new TextEncoder().encode(text);
+  }
+  const stream = new Blob([text]).stream().pipeThrough(new CompressionStream("deflate-raw"));
+  const buf = await new Response(stream).arrayBuffer();
+  return new Uint8Array(buf);
+}
+
+async function inflate(bytes) {
+  if (typeof DecompressionStream === "undefined") {
+    return new TextDecoder().decode(bytes);
+  }
+  try {
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+    const buf = await new Response(stream).arrayBuffer();
+    return new TextDecoder().decode(buf);
+  } catch {
+    // bytes 可能是純文字（無壓縮 fallback）
+    return new TextDecoder().decode(bytes);
+  }
+}
+
+// 編碼單一分類為 share token
+export async function encodeShare(category) {
+  const payload = {
+    label: category.label,
+    emoji: category.emoji,
+    desc: category.desc,
+    items: category.items,
+  };
+  const json = JSON.stringify(payload);
+  const compressed = await deflate(json);
+  return toBase64Url(compressed);
+}
+
+// 從 token 解碼回分類
+export async function decodeShare(token) {
+  if (!token) throw new Error("分享連結為空");
+  const bytes = fromBase64Url(token);
+  const text = await inflate(bytes);
+  const data = JSON.parse(text);
+  if (!data || !data.label || !Array.isArray(data.items)) {
+    throw new Error("分享資料格式錯誤");
+  }
+  return data;
+}
+
+// 產生完整可分享的 URL
+export async function buildShareURL(category) {
+  const token = await encodeShare(category);
+  const base = window.location.origin + window.location.pathname;
+  return `${base}#/import?p=${token}`;
+}
+
+// 從 location.hash 讀取 share token；沒有就回 null
+export function readShareTokenFromHash() {
+  const hash = window.location.hash || "";
+  const m = hash.match(/import\?p=([A-Za-z0-9_-]+)/);
+  return m ? m[1] : null;
+}
+
+// 清掉 hash 中的 share token（不留在網址列）
+export function clearShareHash() {
+  if (window.location.hash) {
+    history.replaceState(null, "", window.location.pathname + window.location.search);
+  }
+}
+
 // ─── 從檔案讀取（File 物件）─────────────────────
 export function readFileAsText(file) {
   return new Promise((resolve, reject) => {

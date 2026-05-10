@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { initTTS } from "./lib/tts";
 import { shuffle } from "./lib/util";
-import { getAllCategories } from "./lib/questionBank";
+import { getAllCategories, mergeImportCustom } from "./lib/questionBank";
+import { readShareTokenFromHash, decodeShare, clearShareHash } from "./lib/packIO";
 import Setup from "./components/Setup";
 import QuestionPhase from "./components/QuestionPhase";
 import AnswerPhase from "./components/AnswerPhase";
 import Final from "./components/Final";
+import ShareImportDialog from "./components/ShareImportDialog";
 
 export default function App() {
   const [phase, setPhase] = useState("setup");
@@ -16,10 +18,36 @@ export default function App() {
   const [finalScores, setFinalScores] = useState([]);
   // categoriesVersion：每次題庫變動就 +1，觸發 Setup 重新讀取
   const [categoriesVersion, setCategoriesVersion] = useState(0);
+  // 分享連結匯入：null = 沒有；否則為 { label, emoji, desc, items }
+  const [pendingShare, setPendingShare] = useState(null);
 
   const categories = getAllCategories();
 
   useEffect(() => { initTTS(); }, []);
+
+  // 啟動時檢查 URL hash 是否有分享 token
+  useEffect(() => {
+    const token = readShareTokenFromHash();
+    if (!token) return;
+    decodeShare(token)
+      .then(cat => setPendingShare(cat))
+      .catch(err => {
+        console.warn("[share] decode failed", err);
+        clearShareHash();
+      });
+  }, []);
+
+  const acceptShare = () => {
+    mergeImportCustom([pendingShare]);
+    setPendingShare(null);
+    clearShareHash();
+    setCategoriesVersion(v => v + 1);
+  };
+
+  const declineShare = () => {
+    setPendingShare(null);
+    clearShareHash();
+  };
   // categoriesVersion 變動 → Setup 收到新 props → 重抓題庫
   // eslint-disable-next-line no-unused-expressions
   categoriesVersion;
@@ -46,9 +74,17 @@ export default function App() {
 
   return (
     <div className="min-h-screen">
+      {pendingShare && (
+        <ShareImportDialog
+          pack={pendingShare}
+          onAccept={acceptShare}
+          onDecline={declineShare}
+        />
+      )}
       {phase === "setup" && (
         <Setup
           categories={categories}
+          categoriesVersion={categoriesVersion}
           onStart={startGame}
           onCategoriesChanged={() => setCategoriesVersion(v => v + 1)}
         />
