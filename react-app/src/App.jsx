@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import questionBank from "./questions.json";
 import { initTTS } from "./lib/tts";
 import { shuffle } from "./lib/util";
+import { getAllCategories } from "./lib/questionBank";
 import Setup from "./components/Setup";
 import QuestionPhase from "./components/QuestionPhase";
 import AnswerPhase from "./components/AnswerPhase";
@@ -14,10 +14,15 @@ export default function App() {
   const [answerOrder, setAnswerOrder] = useState([]);
   const [answerAssign, setAnswerAssign] = useState([]);
   const [finalScores, setFinalScores] = useState([]);
+  // categoriesVersion：每次題庫變動就 +1，觸發 Setup 重新讀取
+  const [categoriesVersion, setCategoriesVersion] = useState(0);
 
-  const categories = questionBank.categories;
+  const categories = getAllCategories();
 
   useEffect(() => { initTTS(); }, []);
+  // categoriesVersion 變動 → Setup 收到新 props → 重抓題庫
+  // eslint-disable-next-line no-unused-expressions
+  categoriesVersion;
 
   const startGame = (cfg) => {
     setConfig(cfg);
@@ -42,7 +47,11 @@ export default function App() {
   return (
     <div className="min-h-screen">
       {phase === "setup" && (
-        <Setup categories={categories} onStart={startGame} />
+        <Setup
+          categories={categories}
+          onStart={startGame}
+          onCategoriesChanged={() => setCategoriesVersion(v => v + 1)}
+        />
       )}
       {phase === "question" && (
         <QuestionPhase

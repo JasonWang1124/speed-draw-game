@@ -4,6 +4,7 @@ import { storage } from "../lib/storage";
 import { clamp, defaultName } from "../lib/util";
 import { speakDirect, refreshVoices, getChosenVoice, selectVoice, playBeep, getChineseVoices, getAllVoicesScored } from "../lib/tts";
 import CategoryPicker from "./CategoryPicker";
+import MyPacks from "./MyPacks";
 
 const PASTEL_COLORS = [
   "bg-pink-200", "bg-yellow-200", "bg-green-200", "bg-blue-200",
@@ -11,7 +12,7 @@ const PASTEL_COLORS = [
   "bg-amber-200", "bg-lime-200",
 ];
 
-export default function Setup({ categories, onStart }) {
+export default function Setup({ categories, onStart, onCategoriesChanged }) {
   const cachedPrefs = useMemo(() => storage.loadPrefs(), []);
   const cachedNames = useMemo(() => storage.loadNames(), []);
 
@@ -145,6 +146,11 @@ export default function Setup({ categories, onStart }) {
           selected={categoryIds}
           onChange={setCategoryIds}
         />
+      </Section>
+
+      {/* My custom packs */}
+      <Section emoji="📝" title="我的題庫（自製）">
+        <MyPacks onChanged={onCategoriesChanged} />
       </Section>
 
       {/* Quick settings */}
