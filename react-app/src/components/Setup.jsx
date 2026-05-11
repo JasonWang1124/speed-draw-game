@@ -5,6 +5,7 @@ import { clamp, defaultName } from "../lib/util";
 import { speakDirect, refreshVoices, getChosenVoice, selectVoice, playBeep, getChineseVoices, getAllVoicesScored } from "../lib/tts";
 import CategoryPicker from "./CategoryPicker";
 import MyPacks from "./MyPacks";
+import VoiceStatusCard from "./VoiceStatusCard";
 
 const PASTEL_COLORS = [
   "bg-pink-200", "bg-yellow-200", "bg-green-200", "bg-blue-200",
@@ -165,6 +166,12 @@ export default function Setup({ categories, categoriesVersion = 0, onStart, onCa
 
       {/* Advanced */}
       <Section emoji="🔊" title="語音與其他">
+        {/* 當前語音狀態（讓使用者一眼看出在用哪個 voice 與品質） */}
+        {useTTS && (
+          <div className="mb-3">
+            <VoiceStatusCard refreshKey={chosenVoiceName + showAllLangs} />
+          </div>
+        )}
         <label className="flex items-center gap-2 mb-3 cursor-pointer">
           <input type="checkbox" checked={useTTS} onChange={(e) => setUseTTS(e.target.checked)} className="w-5 h-5 accent-coral" />
           <span className="font-bold">啟用語音播報</span>

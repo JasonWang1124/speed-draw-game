@@ -10,6 +10,7 @@ const STORAGE_KEY = "speedDraw.voiceName"
 
 let voicesCache = []
 let chosenVoice = null
+let userSelectedManually = false  // 使用者是否在 UI 上手動選過
 let speakChain = Promise.resolve()
 let watchdogTimer = null
 
@@ -95,28 +96,107 @@ function restoreSavedVoice() {
 
 export function refreshVoices() {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return
-  voicesCache = window.speechSynthesis.getVoices()
-  if (voicesCache.length === 0) return
+  const nextList = window.speechSynthesis.getVoices()
+  if (nextList.length === 0) return
+  voicesCache = nextList
 
-  // 還原使用者選擇 > 最高分 voice > 第一個
-  if (!chosenVoice || !voicesCache.includes(chosenVoice)) {
-    chosenVoice =
-      restoreSavedVoice() ||
-      getChineseVoices()[0]?.voice ||
-      getAllVoicesScored()[0]?.voice ||
-      voicesCache[0] ||
-      null
+  // 1. 使用者手動選過（含 localStorage 的記憶）→ 一律尊重，不自動升級
+  if (userSelectedManually) {
+    if (!chosenVoice || !voicesCache.includes(chosenVoice)) {
+      // 已選的 voice 消失（例如系統移除），才 fallback
+      chosenVoice = getChineseVoices()[0]?.voice || voicesCache[0] || null
+    }
+    return
+  }
+
+  // 2. 嘗試從 localStorage 還原（這也視為使用者選過）
+  const saved = restoreSavedVoice()
+  if (saved) {
+    chosenVoice = saved
+    userSelectedManually = true
+    return
+  }
+
+  // 3. 沒有任何使用者偏好 → 永遠選當下最高分的 voice
+  //    這條的重點：即使 chosenVoice 已存在，只要新清單裡有更高分的選項（例如 Google
+  //    voice 後到），就升級過去，避免被一開始的低分 voice 卡住。
+  const best = getChineseVoices()[0]?.voice || getAllVoicesScored()[0]?.voice || voicesCache[0]
+  if (best && best !== chosenVoice) {
+    if (chosenVoice && best !== chosenVoice) {
+      console.info("[tts] voice upgraded:", chosenVoice?.name, "→", best.name, `(${best.lang})`)
+    }
+    chosenVoice = best
   }
 }
 
 export function selectVoice(voice) {
   chosenVoice = voice
+  userSelectedManually = true
   if (voice?.name) {
     try {
       localStorage.setItem(STORAGE_KEY, voice.name)
     } catch {
       // localStorage quota / privacy mode → silent
     }
+  }
+}
+
+// 讓使用者重設「自動選最佳」（移除手動選擇記憶）
+export function resetVoiceChoice() {
+  userSelectedManually = false
+  try {
+    localStorage.removeItem(STORAGE_KEY)
+  } catch {
+    // ignore
+  }
+  refreshVoices()
+}
+
+// 偵錯資訊：給 UI 用
+export function getVoiceDebugInfo() {
+  if (!chosenVoice) {
+    return {
+      hasVoice: false,
+      summary: "尚未載入語音清單",
+      tier: "none",
+    }
+  }
+  const score = scoreVoice(chosenVoice)
+  let tier, label, advice
+  if (score >= 700) {
+    tier = "great"
+    label = "🟢 高品質語音"
+    advice = null
+  } else if (score >= 400) {
+    tier = "good"
+    label = "🟡 中等品質"
+    advice = "可用，但冷僻字可能會跳過。Chrome / Edge 通常有更好的 Google / Microsoft 線上語音"
+  } else if (score >= 100) {
+    tier = "ok"
+    label = "🟠 基本品質"
+    advice = "macOS 內建語音對冷僻字（紅龜粿、椪餅等）涵蓋率較差。建議改用 Chrome / Edge"
+  } else {
+    tier = "low"
+    label = "🔴 非中文語音"
+    advice = "目前選的不是中文語音，多數中文字會念不出來"
+  }
+  const chineseCount = voicesCache.filter(v => /^zh/i.test(v.lang)).length
+  const hasGoogle = voicesCache.some(v => /google/i.test(v.name) && /^zh/i.test(v.lang))
+  const hasMS = voicesCache.some(v => /microsoft|hsiaochen|yating|hanhan|xiaoxiao/i.test(v.name) && /^zh/i.test(v.lang))
+  return {
+    hasVoice: true,
+    name: chosenVoice.name,
+    lang: chosenVoice.lang,
+    localService: chosenVoice.localService,
+    score,
+    tier,
+    label,
+    advice,
+    chineseCount,
+    totalCount: voicesCache.length,
+    hasGoogle,
+    hasMS,
+    isManual: userSelectedManually,
   }
 }
 
