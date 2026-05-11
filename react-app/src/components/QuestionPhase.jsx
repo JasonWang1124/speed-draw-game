@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { speak, speakNow, cancelAllSpeech } from "../lib/tts";
+import { speakNow, cancelAllSpeech } from "../lib/tts";
 import { sleep } from "../lib/util";
 
 export default function QuestionPhase({ questions, intervalMs, useTTS, onDone }) {
@@ -11,22 +11,30 @@ export default function QuestionPhase({ questions, intervalMs, useTTS, onDone })
   useEffect(() => {
     stoppedRef.current = false;
     (async () => {
+      // 倒數：每秒一個數字 + GO!
       for (let n = 3; n >= 1; n--) {
         if (stoppedRef.current) return;
         setCount(n);
-        speak(String(n), { disabled: !useTTS });
-        await sleep(700);
+        await Promise.all([
+          speakNow(String(n), { disabled: !useTTS }),
+          sleep(700),
+        ]);
       }
       if (stoppedRef.current) return;
       setCount(0);
-      speak("開始", { disabled: !useTTS });
-      await sleep(500);
+      await Promise.all([
+        speakNow("開始", { disabled: !useTTS }),
+        sleep(500),
+      ]);
 
+      // 出題：每題保證至少念完才進下一題，避免 Chrome speech queue 累積導致跳字
       for (let i = 0; i < questions.length; i++) {
         if (stoppedRef.current) return;
         setIdx(i);
-        speak(questions[i].name, { disabled: !useTTS });
-        await sleep(intervalMs);
+        await Promise.all([
+          speakNow(questions[i].name, { disabled: !useTTS }),
+          sleep(intervalMs),
+        ]);
       }
       if (!stoppedRef.current) onDone();
     })();

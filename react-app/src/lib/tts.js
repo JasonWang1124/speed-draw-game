@@ -288,12 +288,19 @@ export function speak(text, opts = {}) {
 }
 
 // 立即播報（中斷上一個）— 用在 user gesture 內或要打斷時
+// 所有路徑都回 Promise，方便配 Promise.all([speakNow(...), sleep(N)]) 控節奏
 export function speakNow(text, opts = {}) {
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return
-  if (opts.disabled) return
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+    return Promise.resolve()
+  }
+  if (opts.disabled) return Promise.resolve()
   const synth = window.speechSynthesis
-  if (synth.speaking || synth.pending) synth.cancel()
-  speakChain = speakOne(text, opts)
+  const wasSpeaking = synth.speaking || synth.pending
+  if (wasSpeaking) synth.cancel()
+  // Chrome bug workaround：cancel 後立刻 speak 偶爾不發聲（內部狀態還沒清）
+  // 隔個 microtick + 短延遲再 speak 大幅改善穩定度
+  const delay = wasSpeaking ? 60 : 0
+  speakChain = new Promise(r => setTimeout(r, delay)).then(() => speakOne(text, opts))
   return speakChain
 }
 
