@@ -1,31 +1,24 @@
 import { forwardRef } from "react";
 import { motion } from "framer-motion";
 
-// 換人作答：選手 chip 列 + 輸入欄
-// props:
-//   players: number             玩家總數
-//   playerNames: string[]
-//   mainPlayerIdx: number       原主答題者（不可選）
-//   stealTried: Set<number>     已試過的選手
-//   stealActiveIdx: number|null 目前選中的搶答者
-//   onPick: (playerIdx) => void
-//   onSubmit: () => void
-//   onCancelPick: () => void
-//   onGiveUp: () => void        跳過揭曉答案
+// 換人作答（浮世繪版）
 const StealPanel = forwardRef(function StealPanel(
   { players, playerNames, mainPlayerIdx, stealTried, stealActiveIdx, onPick, onSubmit, onCancelPick, onGiveUp },
   ref
 ) {
   return (
     <>
-      <div className="text-center mb-3">
-        <div className="text-2xl sm:text-3xl font-black bg-gradient-to-br from-buttercup to-coral bg-clip-text text-transparent">
-          🎯 換人作答
+      <div className="text-center mb-5">
+        <div className="font-stamp text-3xl sm:text-4xl text-[var(--color-vermillion)] tracking-[0.2em] mb-1">
+          換　人　作　答
         </div>
-        <div className="text-deep/60 text-sm mt-1">點選一位選手由他作答（答對 +1，答錯該選手不能再選）</div>
+        <div className="font-display text-xs text-[var(--color-ink-soft)]/70 tracking-widest leading-relaxed">
+          擇一選手作答（答對 +1，答錯該選手不能再選）
+        </div>
       </div>
 
-      <div className="flex flex-wrap gap-2 sm:gap-3 justify-center mb-4">
+      {/* 選手選擇 */}
+      <div className="flex flex-wrap gap-2 sm:gap-3 justify-center mb-5">
         {Array.from({ length: players }).map((_, i) => {
           if (i === mainPlayerIdx) return null;
           const tried = stealTried.has(i);
@@ -33,17 +26,31 @@ const StealPanel = forwardRef(function StealPanel(
           return (
             <motion.button
               key={i}
-              whileHover={!tried ? { scale: 1.05 } : {}}
-              whileTap={!tried ? { scale: 0.92 } : {}}
+              whileHover={!tried ? { y: -2 } : {}}
+              whileTap={!tried ? { scale: 0.94 } : {}}
               onClick={() => onPick(i)}
               disabled={tried}
-              className={`px-4 py-2 rounded-full font-black border-3 ${
-                active
-                  ? "bg-gradient-to-br from-buttercup to-coral text-white border-deep shadow-[3px_3px_0_#2d1b4e]"
+              className="relative px-5 py-2.5 font-display font-semibold text-base tracking-wider transition-all"
+              style={{
+                background: active
+                  ? "var(--color-vermillion)"
                   : tried
-                    ? "bg-deep/10 text-deep/40 border-deep/20 line-through"
-                    : "bg-white text-deep border-deep shadow-[3px_3px_0_#2d1b4e]"
-              }`}
+                    ? "var(--color-washi-warm)"
+                    : "var(--color-washi-bright)",
+                color: active
+                  ? "var(--color-washi-bright)"
+                  : tried
+                    ? "var(--color-ink-soft)/40"
+                    : "var(--color-ink)",
+                border: `2px solid ${tried ? "rgba(10,10,10,0.2)" : "var(--color-ink)"}`,
+                boxShadow: active
+                  ? "inset 0 0 0 3px var(--color-washi-bright), inset 0 0 0 4px var(--color-vermillion-dark), 3px 3px 0 var(--color-ink)"
+                  : tried
+                    ? "none"
+                    : "2px 2px 0 var(--color-ink)",
+                textDecoration: tried ? "line-through" : "none",
+                opacity: tried ? 0.5 : 1,
+              }}
             >
               {playerNames[i]}
             </motion.button>
@@ -51,12 +58,13 @@ const StealPanel = forwardRef(function StealPanel(
         })}
       </div>
 
+      {/* 搶答者輸入 */}
       {stealActiveIdx != null && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <input
             ref={ref}
             type="text"
-            placeholder={`${playerNames[stealActiveIdx]} 的答案`}
+            placeholder={`${playerNames[stealActiveIdx]} 之答案`}
             autoComplete="off"
             autoCorrect="off"
             spellCheck="false"
@@ -66,18 +74,22 @@ const StealPanel = forwardRef(function StealPanel(
                 onSubmit();
               }
             }}
-            className="w-full text-center text-2xl font-black p-4 rounded-2xl border-3 border-buttercup bg-cream focus:outline-none focus:ring-4 focus:ring-buttercup/50 mt-2"
+            className="w-full text-center font-display text-xl sm:text-2xl font-semibold tracking-[0.15em] p-3.5 bg-[var(--color-washi-bright)] border-2 border-[var(--color-vermillion)] text-[var(--color-ink)] placeholder:text-[var(--color-ink-soft)]/30 focus:outline-none mt-2"
+            style={{ boxShadow: "3px 3px 0 var(--color-vermillion)" }}
           />
           <div className="flex gap-2 mt-3 justify-center">
-            <button onClick={onSubmit} className="btn-pop">送出</button>
-            <button onClick={onCancelPick} className="btn-soft">取消</button>
+            <button onClick={onSubmit} className="btn-seal text-sm">送 出</button>
+            <button onClick={onCancelPick} className="btn-paper text-sm">取 消</button>
           </div>
         </motion.div>
       )}
 
-      <div className="text-center mt-4">
-        <button onClick={onGiveUp} className="text-deep/60 text-sm underline">
-          跳過 → 揭曉答案
+      <div className="text-center mt-5">
+        <button
+          onClick={onGiveUp}
+          className="font-display text-xs tracking-[0.3em] text-[var(--color-ink-soft)]/60 hover:text-[var(--color-vermillion)] underline underline-offset-4 decoration-2 decoration-[var(--color-ink)]/20 hover:decoration-[var(--color-vermillion)] transition"
+        >
+          ─ 跳過 · 揭曉答案 ─
         </button>
       </div>
     </>

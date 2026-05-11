@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 
-// 多分類混選 chips
+// 多分類混選 chips（浮世繪版）
 // props:
 //   categories: [{ id, label, emoji?, desc, items }]
-//   selected: string[]   被勾選的 category id
+//   selected: string[]
 //   onChange: (string[]) => void
 export default function CategoryPicker({ categories, selected, onChange }) {
   const selectedSet = useMemo(() => new Set(selected), [selected]);
@@ -13,11 +13,8 @@ export default function CategoryPicker({ categories, selected, onChange }) {
   );
 
   const toggle = (id) => {
-    if (selectedSet.has(id)) {
-      onChange(selected.filter(x => x !== id));
-    } else {
-      onChange([...selected, id]);
-    }
+    if (selectedSet.has(id)) onChange(selected.filter(x => x !== id));
+    else onChange([...selected, id]);
   };
 
   const selectAll = () => onChange(categories.map(c => c.id));
@@ -26,32 +23,35 @@ export default function CategoryPicker({ categories, selected, onChange }) {
 
   return (
     <div>
-      {/* 快捷操作列 */}
-      <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
-        <div className="text-sm font-bold text-deep/70">
-          已選 <span className="text-coral text-base">{selected.length}</span> / {categories.length} 類
-          <span className="text-deep/50">　共 {totalItems} 題可抽</span>
+      {/* 統計列：和紙橫條 */}
+      <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+        <div className="font-display text-sm text-[var(--color-ink-soft)] tracking-wider">
+          已選 <span className="font-stamp text-base text-[var(--color-vermillion)]">{selected.length}</span>
+          <span className="mx-1 text-[var(--color-ink)]/30">／</span>
+          {categories.length} 類
+          <span className="mx-3 text-[var(--color-ink)]/20">·</span>
+          共 <span className="font-stamp text-base text-[var(--color-indigo)]">{totalItems}</span> 題可抽
         </div>
         <div className="flex gap-2">
           <button
             onClick={selectAll}
             disabled={allSelected}
-            className="px-3 py-1 text-xs font-bold rounded-full bg-deep/10 hover:bg-deep/20 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="font-display text-xs tracking-widest px-3 py-1.5 border border-[var(--color-ink)]/30 hover:border-[var(--color-ink)] hover:bg-[var(--color-ink)] hover:text-[var(--color-washi-bright)] disabled:opacity-30 disabled:cursor-not-allowed transition"
           >
-            全選
+            全 選
           </button>
           <button
             onClick={selectNone}
             disabled={selected.length === 0}
-            className="px-3 py-1 text-xs font-bold rounded-full bg-deep/10 hover:bg-deep/20 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="font-display text-xs tracking-widest px-3 py-1.5 border border-[var(--color-ink)]/30 hover:border-[var(--color-ink)] hover:bg-[var(--color-ink)] hover:text-[var(--color-washi-bright)] disabled:opacity-30 disabled:cursor-not-allowed transition"
           >
-            全不選
+            全 不 選
           </button>
         </div>
       </div>
 
-      {/* Chips */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+      {/* Chips 網格 */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
         {categories.map((cat) => {
           const checked = selectedSet.has(cat.id);
           return (
@@ -59,19 +59,41 @@ export default function CategoryPicker({ categories, selected, onChange }) {
               key={cat.id}
               onClick={() => toggle(cat.id)}
               aria-pressed={checked}
-              className={`rounded-2xl p-3 text-left border-2 transition-all ${
+              className={`relative text-left p-3 pl-4 border-2 transition-all overflow-hidden ${
                 checked
-                  ? "bg-coral text-white border-deep shadow-[4px_4px_0_#2d1b4e] scale-[1.02]"
-                  : "bg-white text-deep border-deep/15 hover:border-deep/40 hover:scale-[1.02] shadow-[2px_2px_0_rgba(45,27,78,0.1)]"
+                  ? "bg-[var(--color-indigo)] border-[var(--color-indigo-dark)] text-[var(--color-washi-bright)]"
+                  : "bg-[var(--color-washi-bright)] border-[var(--color-ink)]/25 text-[var(--color-ink)] hover:border-[var(--color-ink)] hover:-translate-y-0.5 hover:shadow-[3px_3px_0_var(--color-ink)]"
               }`}
             >
-              <div className="font-black text-sm sm:text-base flex items-center gap-1">
-                {cat.emoji && <span>{cat.emoji}</span>}
+              {/* 左側裝飾豎線 */}
+              <span
+                className={`absolute left-0 top-0 bottom-0 w-1 ${
+                  checked ? "bg-[var(--color-vermillion)]" : "bg-[var(--color-vermillion)]/40"
+                }`}
+              ></span>
+
+              {/* 選中時的紅章 */}
+              {checked && (
+                <span
+                  className="absolute top-1.5 right-1.5 font-stamp text-xs text-[var(--color-washi-bright)] bg-[var(--color-vermillion)] px-1.5 py-0.5 leading-none"
+                  style={{ transform: "rotate(-4deg)", boxShadow: "inset 0 0 0 1.5px var(--color-washi-bright), inset 0 0 0 2px var(--color-vermillion-dark)" }}
+                >
+                  選
+                </span>
+              )}
+
+              <div className="font-display font-semibold text-sm sm:text-base tracking-wider flex items-center gap-1.5">
+                {cat.emoji && <span className="text-base">{cat.emoji}</span>}
                 <span>{cat.label}</span>
-                {checked && <span className="ml-auto text-xs">✓</span>}
               </div>
-              <div className={`text-xs mt-1 ${checked ? "text-white/85" : "text-deep/60"}`}>{cat.desc}</div>
-              <div className={`text-xs mt-1 font-mono ${checked ? "text-white/70" : "text-deep/40"}`}>
+              <div className={`text-xs mt-1 leading-relaxed ${checked ? "text-[var(--color-washi-bright)]/75" : "text-[var(--color-ink-soft)]/70"}`}>
+                {cat.desc}
+              </div>
+              <div
+                className={`font-stamp text-xs mt-1.5 tracking-widest ${
+                  checked ? "text-[var(--color-vermillion-soft)]" : "text-[var(--color-vermillion)]/70"
+                }`}
+              >
                 {cat.items.length} 題
               </div>
             </button>
@@ -81,8 +103,8 @@ export default function CategoryPicker({ categories, selected, onChange }) {
 
       {/* 警告：完全沒選 */}
       {selected.length === 0 && (
-        <p className="mt-3 text-coral font-bold text-sm">
-          ⚠️ 至少選一類才能開始遊戲（不選就會抽不到題）
+        <p className="mt-3 font-display text-sm text-[var(--color-vermillion)] tracking-wider">
+          ⚠ 至少選一類才能開席（不選就會無題可抽）
         </p>
       )}
     </div>

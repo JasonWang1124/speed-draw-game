@@ -142,11 +142,11 @@ export default function MyPacks({ onChanged, externalVersion = 0 }) {
   return (
     <div>
       {packs.length === 0 ? (
-        <p className="text-deep/60 text-sm mb-3">
+        <p className="text-[var(--color-ink-soft)]/70 text-sm leading-relaxed mb-4">
           尚無自製題庫。點下方按鈕新增屬於你自己的題目（例如：同事暱稱、家裡物品、工作專案⋯⋯）
         </p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-4">
           {packs.map(p => (
             <PackRow
               key={p.id}
@@ -160,14 +160,14 @@ export default function MyPacks({ onChanged, externalVersion = 0 }) {
       )}
 
       <div className="flex flex-wrap gap-2">
-        <button onClick={startAdd} className="btn-soft text-sm">
-          ➕ 新增自製題庫
+        <button onClick={startAdd} className="btn-paper-accent text-xs">
+          ＋ 新 增 題 庫
         </button>
-        <button onClick={handlePickFile} className="btn-soft text-sm">
-          📥 匯入 JSON / CSV
+        <button onClick={handlePickFile} className="btn-paper text-xs">
+          匯 入 JSON / CSV
         </button>
-        <button onClick={handleExportAllJSON} className="btn-soft text-sm" disabled={packs.length === 0}>
-          📤 匯出全部為 JSON
+        <button onClick={handleExportAllJSON} className="btn-paper text-xs" disabled={packs.length === 0}>
+          匯 出 全 部
         </button>
       </div>
 
@@ -181,13 +181,13 @@ export default function MyPacks({ onChanged, externalVersion = 0 }) {
 
       {message && (
         <div
-          className={`mt-3 p-2 rounded-xl text-sm font-bold border-2 ${
+          className={`mt-3 px-3 py-2 text-sm font-display border-l-4 ${
             message.type === "ok"
-              ? "bg-mint/30 border-mint text-deep"
-              : "bg-coral/15 border-coral/40 text-coral"
+              ? "bg-[var(--color-indigo)]/10 border-[var(--color-indigo)] text-[var(--color-indigo-dark)]"
+              : "bg-[var(--color-vermillion)]/10 border-[var(--color-vermillion)] text-[var(--color-vermillion-dark)]"
           }`}
         >
-          {message.type === "ok" ? "✅ " : "⚠️ "}
+          {message.type === "ok" ? "✓ " : "⚠ "}
           {message.text}
         </div>
       )}
@@ -222,31 +222,35 @@ function CSVImportDialog({ suggestedLabel, onConfirm, onCancel }) {
   const [label, setLabel] = useState(suggestedLabel || "");
   const [emoji, setEmoji] = useState("📦");
   return (
-    <div className="fixed inset-0 z-50 bg-deep/40 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-cream w-full max-w-md rounded-3xl shadow-[6px_6px_0_#2d1b4e] border-3 border-deep p-5">
-        <h3 className="text-lg font-black mb-3">匯入 CSV — 設定分類名稱</h3>
-        <div className="flex gap-2 mb-3">
+    <div className="fixed inset-0 z-50 bg-[var(--color-ink)]/40 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="washi-card w-full max-w-md p-6">
+        <div className="flex items-baseline gap-2 mb-4">
+          <span className="font-stamp text-2xl text-[var(--color-vermillion)]">印</span>
+          <h3 className="font-display text-lg font-semibold tracking-widest">匯入 CSV</h3>
+          <span className="text-xs tracking-widest text-[var(--color-ink-soft)]/60 ml-1">SET LABEL</span>
+        </div>
+        <div className="flex gap-2 mb-4">
           <input
             value={emoji}
             onChange={e => setEmoji(e.target.value)}
             maxLength={4}
-            className="w-14 text-center text-2xl rounded-xl border-2 border-deep/15 bg-white p-2"
+            className="w-14 text-center text-2xl border-2 border-[var(--color-ink)]/30 bg-[var(--color-washi-bright)] p-2 focus:outline-none focus:border-[var(--color-vermillion)]"
           />
           <input
             value={label}
             onChange={e => setLabel(e.target.value)}
             placeholder="分類名稱"
-            className="flex-1 rounded-xl border-2 border-deep/15 bg-white p-2 font-bold"
+            className="flex-1 border-2 border-[var(--color-ink)]/30 bg-[var(--color-washi-bright)] p-2 font-display font-semibold focus:outline-none focus:border-[var(--color-vermillion)]"
           />
         </div>
         <div className="flex gap-2 justify-end">
-          <button onClick={onCancel} className="btn-soft text-sm">取消</button>
+          <button onClick={onCancel} className="btn-paper text-xs">取 消</button>
           <button
             onClick={() => label.trim() && onConfirm(label.trim(), emoji.trim() || "📦")}
             disabled={!label.trim()}
-            className="btn-pop text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+            className="btn-seal text-xs px-6 py-2"
           >
-            匯入
+            匯 入
           </button>
         </div>
       </div>
@@ -255,37 +259,39 @@ function CSVImportDialog({ suggestedLabel, onConfirm, onCancel }) {
 }
 
 function PackRow({ pack, onEdit, onExportCSV, onShare }) {
-  // 用 div 而非 button 避免巢狀 button warning
   return (
-    <div
-      className="text-left rounded-2xl p-3 border-2 border-deep/15 bg-white hover:border-deep/40 transition shadow-[2px_2px_0_rgba(45,27,78,0.1)]"
-    >
-      <div className="font-black flex items-center gap-2">
+    <div className="relative bg-[var(--color-washi-warm)] border-2 border-[var(--color-ink)]/40 p-3 pl-4 hover:shadow-[3px_3px_0_var(--color-vermillion)] hover:border-[var(--color-ink)] transition">
+      <span className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-vermillion)]"></span>
+      <div className="flex items-center gap-2 mb-1">
         <span className="text-xl">{pack.emoji || "📦"}</span>
-        <span className="truncate">{pack.label}</span>
-        <span className="ml-auto text-xs font-mono text-deep/50">{pack.items.length} 題</span>
+        <span className="font-display font-semibold tracking-wider truncate text-[var(--color-ink)]">{pack.label}</span>
+        <span className="ml-auto font-stamp text-xs tracking-widest text-[var(--color-vermillion)]">{pack.items.length} 題</span>
       </div>
-      {pack.desc && <div className="text-xs text-deep/60 mt-1 truncate">{pack.desc}</div>}
-      <div className="flex gap-2 mt-2">
+      {pack.desc && (
+        <div className="text-xs text-[var(--color-ink-soft)]/70 mb-2 truncate leading-relaxed">
+          {pack.desc}
+        </div>
+      )}
+      <div className="flex gap-1.5 mt-2">
         <button
           onClick={onEdit}
-          className="flex-1 text-xs font-bold px-2 py-1 rounded-lg bg-deep/10 hover:bg-deep/20"
+          className="flex-1 font-display text-xs tracking-widest px-2 py-1 border border-[var(--color-ink)]/30 hover:bg-[var(--color-ink)] hover:text-[var(--color-washi-bright)] transition"
         >
-          ✏️ 編輯
+          編 輯
         </button>
         <button
           onClick={onExportCSV}
-          className="text-xs font-bold px-2 py-1 rounded-lg bg-deep/10 hover:bg-deep/20"
+          className="font-display text-xs tracking-widest px-2 py-1 border border-[var(--color-ink)]/30 hover:bg-[var(--color-ink)] hover:text-[var(--color-washi-bright)] transition"
           title="匯出為 CSV"
         >
-          📤 CSV
+          CSV
         </button>
         <button
           onClick={onShare}
-          className="text-xs font-bold px-2 py-1 rounded-lg bg-deep/10 hover:bg-deep/20"
+          className="font-display text-xs tracking-widest px-2 py-1 border border-[var(--color-ink)]/30 hover:bg-[var(--color-vermillion)] hover:border-[var(--color-vermillion)] hover:text-[var(--color-washi-bright)] transition"
           title="複製分享連結"
         >
-          🔗 分享
+          分 享
         </button>
       </div>
     </div>

@@ -215,13 +215,14 @@ export default function AnswerPhase({ config, questions, answerOrder, answerAssi
     <div className="min-h-screen px-4 py-6 sm:py-8 flex flex-col">
       {/* 進度 */}
       <div className="text-center mb-4">
-        <div className="text-deep/60 font-bold tracking-widest text-sm">
-          第 <span className="text-deep">{round + 1}</span> / {answerOrder.length} 輪
+        <div className="font-display text-xs tracking-[0.4em] text-[var(--color-ink-soft)]/70">
+          第　<span className="font-stamp text-base text-[var(--color-vermillion)]">{round + 1}</span>
+          　／　{answerOrder.length}　輪
         </div>
       </div>
 
       {/* 玩家標籤 */}
-      <div className="flex justify-center mb-4">
+      <div className="flex justify-center mb-5">
         <PlayerPill
           stage={stage}
           activeName={activeName}
@@ -231,27 +232,28 @@ export default function AnswerPhase({ config, questions, answerOrder, answerAssi
       </div>
 
       {/* 主卡片 */}
-      <div className="flex-1 max-w-2xl w-full mx-auto sticker p-4 sm:p-6">
+      <div className="flex-1 max-w-2xl w-full mx-auto washi-card p-5 sm:p-7">
         <AnimatePresence mode="wait">
           {stage === "answering" && (
             <motion.div key="ans" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <div className="text-center text-deep/70 mb-2 font-bold">
-                請回答第 {qIdx + 1} 題
+              <div className="text-center mb-3">
+                <span className="font-display text-xs tracking-[0.3em] text-[var(--color-ink-soft)]/60">
+                  回答第　<span className="font-stamp text-sm text-[var(--color-vermillion)]">{qIdx + 1}</span>　題
+                </span>
               </div>
               {showAnswerText && (
-                <div className="text-center my-2">
-                  <div
-                    className="inline-block px-4 py-2 rounded-2xl bg-deep/5 border-2 border-deep/15 text-2xl sm:text-3xl font-black tracking-wide"
-                    style={{
-                      background: "linear-gradient(135deg, #ff7a8a, #b388ff)",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                    }}
-                  >
+                <motion.div
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-center my-3 py-3 border-y-2 border-dashed border-[var(--color-vermillion)]/30"
+                >
+                  <div className="font-stamp text-3xl sm:text-4xl text-[var(--color-ink)] tracking-[0.15em]">
                     {q.name}
                   </div>
-                  <div className="text-xs text-deep/50 mt-1">👀 視覺輔助模式</div>
-                </div>
+                  <div className="font-display text-xs tracking-[0.4em] text-[var(--color-vermillion)]/80 mt-1">
+                    視　覺　輔　助
+                  </div>
+                </motion.div>
               )}
               <CountdownTimer timeLeft={timeLeft} total={answerSec} resetKey={round} />
               <AnswerInput

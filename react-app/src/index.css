@@ -1,15 +1,34 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&family=Yuji+Syuku&family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+
+/* ─────────────────────────────────────────────
+ * 浮世繪祭典｜Woodblock Festival 設計系統
+ * 配色：靛 / 朱 / 和紙 / 墨 / 金
+ * 字體：Klee One（display）+ Noto Sans TC（body）+ Yuji Syuku（戲劇）
+ * 質感：和紙紋理 + 墨痕 + 印章邊框 + 青海波
+ * ───────────────────────────────────────────── */
 
 @theme {
-  --font-sans: "Nunito", "Comic Sans MS", -apple-system, "PingFang TC", "Heiti TC", sans-serif;
-  --color-cream: #fff8f0;
-  --color-peach: #ffb4a2;
-  --color-coral: #ff7a8a;
-  --color-mint: #b6e2d3;
-  --color-sky: #a8dadc;
-  --color-buttercup: #ffd66e;
-  --color-grape: #b388ff;
-  --color-deep: #2d1b4e;
+  /* === 色系 === */
+  --color-ink: #0a0a0a;            /* 墨 — 主要文字、邊框 */
+  --color-ink-soft: #2c2620;       /* 淡墨 — 次要文字 */
+  --color-vermillion: #d4391c;     /* 朱 — 強調、印章 */
+  --color-vermillion-dark: #a72b15;
+  --color-vermillion-soft: #e85e3f;
+  --color-indigo: #1a3a5c;         /* 靛 — 主色 */
+  --color-indigo-dark: #0e2440;
+  --color-indigo-soft: #2c5278;
+  --color-washi: #f4e9d8;          /* 和紙 — 主背景 */
+  --color-washi-warm: #ede0c9;     /* 深和紙 — 卡片背景 */
+  --color-washi-cool: #e8e1cf;
+  --color-washi-bright: #faf3e3;
+  --color-gold: #b88a3a;           /* 金 — 點綴 */
+  --color-gold-soft: #d9b566;
+
+  /* === 字體 === */
+  --font-sans: 'Noto Sans TC', -apple-system, 'PingFang TC', 'Heiti TC', sans-serif;
+  --font-display: 'Klee One', 'Yu Mincho', 'PingFang TC', serif;
+  --font-stamp: 'Yuji Syuku', 'Klee One', serif;
 }
 
 @layer base {
@@ -17,107 +36,282 @@
     min-height: 100%;
     height: 100%;
   }
+
   body {
     margin: 0;
     font-family: var(--font-sans);
-    background: linear-gradient(135deg, #fff8f0 0%, #ffe8d6 50%, #ffd6e8 100%);
-    color: #2d1b4e;
+    color: var(--color-ink);
+    background-color: var(--color-washi);
+    /* 和紙紋理：SVG fractal noise（暖色微顆粒）+ 角落紅藍暈 */
+    background-image:
+      url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600' viewBox='0 0 600 600'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.78' numOctaves='2' stitchTiles='stitch' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.27 0 0 0 0 0.17 0 0 0 0.10 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+      radial-gradient(ellipse 60% 50% at 15% 10%, rgba(212, 57, 28, 0.06), transparent 60%),
+      radial-gradient(ellipse 60% 50% at 85% 95%, rgba(26, 58, 92, 0.08), transparent 60%);
+    background-attachment: fixed;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
   }
-  button { font-family: inherit; }
+
+  button { font-family: inherit; cursor: pointer; }
   input { font-family: inherit; }
+
+  /* 中文字體渲染微調 */
+  .font-display {
+    font-family: var(--font-display);
+    letter-spacing: 0.02em;
+  }
+  .font-stamp {
+    font-family: var(--font-stamp);
+  }
 }
 
-@keyframes wiggle {
-  0%, 100% { transform: rotate(-2deg); }
-  50% { transform: rotate(2deg); }
-}
-@keyframes pop-in {
-  0% { transform: scale(0.6); opacity: 0; }
-  60% { transform: scale(1.08); opacity: 1; }
-  100% { transform: scale(1); opacity: 1; }
-}
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-12px); }
-}
-@keyframes pulse-glow {
-  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 20px rgba(255, 122, 138, 0.4)); }
-  50% { transform: scale(1.08); filter: drop-shadow(0 0 40px rgba(255, 122, 138, 0.7)); }
-}
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  20% { transform: translateX(-10px); }
-  40% { transform: translateX(10px); }
-  60% { transform: translateX(-6px); }
-  80% { transform: translateX(6px); }
-}
-@keyframes confetti-fall {
-  0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
-  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
-}
+/* ─────────────────────────────────────────────
+ * Utility classes
+ * ───────────────────────────────────────────── */
 
-.animate-wiggle { animation: wiggle 0.4s ease-in-out infinite; }
-.animate-pop-in { animation: pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
-.animate-float { animation: float 2s ease-in-out infinite; }
-.animate-pulse-glow { animation: pulse-glow 1s ease-in-out infinite; }
-.animate-shake { animation: shake 0.4s; }
-
-/* Hand-drawn looking borders */
-.doodle-border {
-  border: 3px solid #2d1b4e;
-  box-shadow: 4px 4px 0 #2d1b4e;
-  border-radius: 16px;
-}
-.doodle-border-soft {
-  border: 2px solid rgba(45, 27, 78, 0.2);
-  box-shadow: 3px 3px 0 rgba(45, 27, 78, 0.15);
-  border-radius: 14px;
-}
-
-/* Sticker style cards */
-.sticker {
-  background: white;
-  border-radius: 22px;
+/* === 卡片 = 和紙卷軸 === */
+.washi-card {
+  background: var(--color-washi-bright);
+  border: 1px solid rgba(10, 10, 10, 0.12);
+  position: relative;
+  /* 雙層陰影模擬紙張浮起 */
   box-shadow:
-    0 6px 0 rgba(45, 27, 78, 0.15),
-    0 12px 30px rgba(45, 27, 78, 0.12);
-  border: 2px solid rgba(45, 27, 78, 0.08);
+    0 1px 0 rgba(255, 255, 255, 0.6) inset,
+    0 0 0 1px rgba(10, 10, 10, 0.04),
+    0 10px 30px -12px rgba(26, 58, 92, 0.18),
+    0 3px 8px -4px rgba(10, 10, 10, 0.12);
+  /* 紙張微紋理：細顆粒疊在卡片上 */
+  background-image:
+    url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='1' stitchTiles='stitch' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0.3 0 0 0 0 0.22 0 0 0 0 0.12 0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23c)'/%3E%3C/svg%3E");
 }
 
-/* Big chunky button */
-.btn-pop {
-  background: linear-gradient(180deg, #ff8fa8, #ff6478);
-  color: white;
-  border: 3px solid #2d1b4e;
-  border-radius: 18px;
-  padding: 14px 28px;
-  font-weight: 800;
-  font-size: 18px;
-  letter-spacing: 1px;
-  box-shadow: 0 5px 0 #2d1b4e;
-  transition: transform 0.1s, box-shadow 0.1s;
-  cursor: pointer;
+/* 卡片內的紅色印章角飾（左下） */
+.washi-card.with-stamp::after {
+  content: '';
+  position: absolute;
+  bottom: 14px;
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  background: var(--color-vermillion);
+  border-radius: 4px;
+  opacity: 0.85;
+  mix-blend-mode: multiply;
+  box-shadow: inset 0 0 0 2px var(--color-washi-bright), inset 0 0 0 3px var(--color-vermillion);
 }
-.btn-pop:hover { transform: translateY(-2px); box-shadow: 0 7px 0 #2d1b4e; }
-.btn-pop:active { transform: translateY(3px); box-shadow: 0 2px 0 #2d1b4e; }
-.btn-pop:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: 0 5px 0 #2d1b4e; }
 
-.btn-soft {
-  background: white;
-  color: #2d1b4e;
-  border: 3px solid #2d1b4e;
-  border-radius: 18px;
-  padding: 12px 22px;
+/* === 印章按鈕 === */
+.btn-seal {
+  position: relative;
+  background: var(--color-vermillion);
+  color: var(--color-washi-bright);
+  border: none;
+  font-family: var(--font-display);
+  font-weight: 600;
+  padding: 14px 36px;
+  font-size: 17px;
+  letter-spacing: 6px;
+  transition: transform 0.12s, filter 0.12s, box-shadow 0.12s;
+  /* 雙線印章邊框：內白外朱 */
+  box-shadow:
+    inset 0 0 0 3px var(--color-washi-bright),
+    inset 0 0 0 4px var(--color-vermillion-dark),
+    3px 3px 0 var(--color-ink);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
+}
+.btn-seal:hover { transform: translate(-1px, -1px); filter: brightness(1.05) saturate(1.1); box-shadow: inset 0 0 0 3px var(--color-washi-bright), inset 0 0 0 4px var(--color-vermillion-dark), 5px 5px 0 var(--color-ink); }
+.btn-seal:active { transform: translate(3px, 3px); box-shadow: inset 0 0 0 3px var(--color-washi-bright), inset 0 0 0 4px var(--color-vermillion-dark), 0 0 0 var(--color-ink); }
+.btn-seal:disabled { opacity: 0.45; cursor: not-allowed; transform: none; filter: saturate(0.5); }
+
+/* === 紙按鈕（墨線輪廓） === */
+.btn-paper {
+  background: var(--color-washi-bright);
+  color: var(--color-ink);
+  border: 2px solid var(--color-ink);
+  font-family: var(--font-display);
+  font-weight: 600;
+  padding: 10px 22px;
+  font-size: 15px;
+  letter-spacing: 2px;
+  transition: transform 0.12s, background 0.12s, color 0.12s, box-shadow 0.12s;
+  box-shadow: 2px 2px 0 var(--color-ink);
+}
+.btn-paper:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--color-ink); background: var(--color-washi); }
+.btn-paper:active { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--color-ink); }
+.btn-paper:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+/* 朱色描邊版本 */
+.btn-paper-accent {
+  background: var(--color-washi-bright);
+  color: var(--color-vermillion-dark);
+  border: 2px solid var(--color-vermillion);
+  font-family: var(--font-display);
+  font-weight: 600;
+  padding: 10px 22px;
+  font-size: 15px;
+  letter-spacing: 2px;
+  transition: transform 0.12s, background 0.12s, box-shadow 0.12s;
+  box-shadow: 2px 2px 0 var(--color-vermillion);
+}
+.btn-paper-accent:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--color-vermillion); background: var(--color-vermillion); color: var(--color-washi-bright); }
+.btn-paper-accent:active { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--color-vermillion); }
+
+/* === 圓印章（標籤、徽章） === */
+.stamp-round {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  background: var(--color-vermillion);
+  color: var(--color-washi-bright);
+  font-family: var(--font-stamp);
   font-weight: 700;
-  box-shadow: 0 4px 0 #2d1b4e;
-  cursor: pointer;
-  transition: transform 0.1s, box-shadow 0.1s;
+  border-radius: 50%;
+  letter-spacing: 0;
+  /* 內白外朱雙環 */
+  box-shadow:
+    inset 0 0 0 2px var(--color-washi-bright),
+    inset 0 0 0 3px var(--color-vermillion-dark);
+  transform: rotate(-4deg);
 }
-.btn-soft:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #2d1b4e; }
-.btn-soft:active { transform: translateY(2px); box-shadow: 0 2px 0 #2d1b4e; }
 
-/* Hide scrollbars on horizontal scrollers */
+/* === 方印章（用於分類 chip 等） === */
+.stamp-square {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-vermillion);
+  color: var(--color-washi-bright);
+  font-family: var(--font-stamp);
+  font-weight: 700;
+  padding: 6px 10px;
+  box-shadow:
+    inset 0 0 0 2px var(--color-washi-bright),
+    inset 0 0 0 3px var(--color-vermillion-dark);
+  transform: rotate(-2deg);
+}
+
+/* === 墨筆橫線分隔 === */
+.ink-divider {
+  position: relative;
+  height: 6px;
+  background: transparent;
+}
+.ink-divider::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--color-ink);
+  clip-path: polygon(0% 40%, 8% 30%, 22% 55%, 38% 35%, 55% 60%, 72% 30%, 88% 55%, 96% 38%, 100% 50%, 95% 65%, 80% 45%, 65% 70%, 50% 40%, 30% 65%, 15% 45%, 0% 60%);
+  opacity: 0.85;
+}
+
+/* === 區段標題（毛筆字 + 紅章） === */
+.section-title {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.5rem;
+  letter-spacing: 0.08em;
+  color: var(--color-ink);
+  margin-bottom: 1rem;
+}
+.section-title .num {
+  font-family: var(--font-stamp);
+  font-size: 0.95em;
+  color: var(--color-vermillion);
+  letter-spacing: 0;
+}
+.section-title .bar {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, var(--color-ink) 0%, var(--color-ink) 30%, transparent 100%);
+  align-self: center;
+  margin-left: 6px;
+}
+
+/* === 直書傳統標題（用於 hero） === */
+.tategaki {
+  writing-mode: vertical-rl;
+  letter-spacing: 0.18em;
+}
+
+/* === 青海波背景紋（可疊在區塊上） === */
+.seigaiha-bg {
+  background-image:
+    url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='30' viewBox='0 0 60 30'%3E%3Cpath d='M0 30 A 15 15 0 0 1 30 30 M30 30 A 15 15 0 0 1 60 30 M-15 30 A 15 15 0 0 0 15 30 M45 30 A 15 15 0 0 0 75 30' fill='none' stroke='%231a3a5c' stroke-width='1' opacity='0.18'/%3E%3C/svg%3E");
+  background-size: 60px 30px;
+  background-repeat: repeat;
+}
+
+/* === Animations === */
+@keyframes ink-bloom {
+  0% { transform: scale(0.6); opacity: 0; filter: blur(8px); }
+  60% { transform: scale(1.04); opacity: 1; filter: blur(0); }
+  100% { transform: scale(1); }
+}
+@keyframes paper-flutter {
+  0%, 100% { transform: rotate(-0.5deg); }
+  50% { transform: rotate(0.5deg); }
+}
+@keyframes stamp-press {
+  0% { transform: scale(1.4) rotate(-8deg); opacity: 0; }
+  50% { transform: scale(0.92) rotate(-4deg); opacity: 1; }
+  100% { transform: scale(1) rotate(-4deg); opacity: 1; }
+}
+@keyframes brush-reveal {
+  0% { clip-path: inset(0 100% 0 0); }
+  100% { clip-path: inset(0 0 0 0); }
+}
+@keyframes ripple-out {
+  0% { transform: scale(0.4); opacity: 0.8; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+@keyframes shake-ink {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px) rotate(-1deg); }
+  40% { transform: translateX(8px) rotate(1deg); }
+  60% { transform: translateX(-5px) rotate(-0.5deg); }
+  80% { transform: translateX(5px) rotate(0.5deg); }
+}
+@keyframes glow-pulse {
+  0%, 100% { filter: drop-shadow(0 0 18px rgba(212, 57, 28, 0.35)); }
+  50% { filter: drop-shadow(0 0 36px rgba(212, 57, 28, 0.6)); }
+}
+@keyframes hero-float {
+  0%, 100% { transform: translateY(0) rotate(-0.3deg); }
+  50% { transform: translateY(-8px) rotate(0.3deg); }
+}
+
+.animate-ink-bloom { animation: ink-bloom 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
+.animate-paper-flutter { animation: paper-flutter 3s ease-in-out infinite; }
+.animate-stamp-press { animation: stamp-press 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+.animate-brush-reveal { animation: brush-reveal 0.7s cubic-bezier(0.65, 0, 0.35, 1) forwards; }
+.animate-shake-ink { animation: shake-ink 0.5s; }
+.animate-glow-pulse { animation: glow-pulse 1.4s ease-in-out infinite; }
+.animate-hero-float { animation: hero-float 4s ease-in-out infinite; }
+
+/* Ripple — 用在「聲音擴散」效果 */
+.ripple-wave {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--color-vermillion);
+  border-radius: 50%;
+  animation: ripple-out 2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+.ripple-wave.delay-1 { animation-delay: 0.5s; }
+.ripple-wave.delay-2 { animation-delay: 1s; }
+
+/* === 滾動條隱藏 === */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }
+
+/* === 文字 brushstroke underline === */
+.brush-underline {
+  background-image: linear-gradient(transparent 75%, rgba(212, 57, 28, 0.4) 75%);
+  background-size: 100% 100%;
+  padding-bottom: 2px;
+}

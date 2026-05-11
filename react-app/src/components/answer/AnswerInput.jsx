@@ -1,22 +1,21 @@
 import { forwardRef } from "react";
 import { motion } from "framer-motion";
 
-// 答題輸入框 + 送出/換人按鈕 + 錯誤嘗試記錄
-// props:
-//   shakeKey: number          每次答錯遞增，觸發抖動動畫
-//   wrongCount: number
-//   maxWrongs: number
-//   attempts: string[]        錯誤紀錄
-//   onSubmit: () => void
-//   onSkip: () => void
+// 答題輸入（浮世繪版）
 const AnswerInput = forwardRef(function AnswerInput(
   { shakeKey, wrongCount, maxWrongs, attempts, onSubmit, onSkip },
   ref
 ) {
+  const danger = wrongCount >= maxWrongs;
   return (
     <>
-      <div className={`text-center text-sm font-bold mb-2 ${wrongCount >= maxWrongs ? "text-coral" : "text-deep/60"}`}>
-        錯誤 {wrongCount} / {maxWrongs}
+      {/* 錯誤次數 */}
+      <div
+        className={`text-center font-display text-xs tracking-[0.3em] mb-3 ${
+          danger ? "text-[var(--color-vermillion)]" : "text-[var(--color-ink-soft)]/60"
+        }`}
+      >
+        錯 誤 {wrongCount} / {maxWrongs}
       </div>
 
       <motion.input
@@ -25,7 +24,7 @@ const AnswerInput = forwardRef(function AnswerInput(
         animate={shakeKey > 0 ? { x: [-10, 10, -6, 6, 0] } : {}}
         transition={{ duration: 0.4 }}
         type="text"
-        placeholder="輸入答案後按 Enter"
+        placeholder="揮 毫 作 答　·　按 ENTER"
         autoComplete="off"
         autoCorrect="off"
         spellCheck="false"
@@ -35,20 +34,22 @@ const AnswerInput = forwardRef(function AnswerInput(
             onSubmit();
           }
         }}
-        className="w-full text-center text-2xl sm:text-3xl font-black p-4 rounded-2xl border-3 border-deep bg-cream focus:bg-white focus:outline-none focus:ring-4 focus:ring-coral/40 placeholder:text-deep/30 placeholder:font-bold"
+        className="w-full text-center font-display text-2xl sm:text-3xl font-semibold tracking-[0.15em] p-4 bg-[var(--color-washi-bright)] border-2 border-[var(--color-ink)] text-[var(--color-ink)] placeholder:text-[var(--color-ink-soft)]/30 placeholder:tracking-[0.2em] placeholder:font-display placeholder:text-base focus:bg-white focus:outline-none focus:border-[var(--color-vermillion)]"
+        style={{ boxShadow: "3px 3px 0 var(--color-ink)" }}
       />
 
-      <div className="flex gap-2 sm:gap-3 mt-3 justify-center">
-        <button onClick={onSubmit} className="btn-pop flex-1">送出答案</button>
-        <button onClick={onSkip} className="btn-soft">換人作答</button>
+      <div className="flex gap-2 mt-4 justify-center">
+        <button onClick={onSubmit} className="btn-seal flex-1 max-w-xs">送 出</button>
+        <button onClick={onSkip} className="btn-paper">換 人</button>
       </div>
 
+      {/* 已試過的錯答 */}
       {attempts.length > 0 && (
-        <div className="flex flex-wrap gap-2 mt-3 justify-center">
+        <div className="flex flex-wrap gap-2 mt-4 justify-center">
           {attempts.map((a, i) => (
             <span
               key={i}
-              className="px-3 py-1 rounded-full bg-coral/15 text-coral text-sm font-bold line-through border border-coral/30"
+              className="font-display text-xs tracking-wider px-3 py-1 bg-[var(--color-vermillion)]/10 text-[var(--color-vermillion)] border border-[var(--color-vermillion)]/30 line-through"
             >
               {a}
             </span>
