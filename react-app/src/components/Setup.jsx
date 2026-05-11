@@ -31,6 +31,8 @@ export default function Setup({ categories, categoriesVersion = 0, onStart, onCa
   });
   const [useTTS, setUseTTS] = useState(cachedPrefs.useTTS ?? true);
   const [shuffleAnswer, setShuffleAnswer] = useState(cachedPrefs.shuffleAnswer ?? true);
+  // 答題階段是否讓主答題者看見題目文字（適合冷僻字念不出來時的視覺 fallback）
+  const [showAnswerText, setShowAnswerText] = useState(cachedPrefs.showAnswerText ?? false);
   const [names, setNames] = useState(() => {
     const arr = [];
     for (let i = 0; i < 10; i++) arr.push(cachedNames[i] || "");
@@ -70,7 +72,7 @@ export default function Setup({ categories, categoriesVersion = 0, onStart, onCa
       finalNames.push((names[i] || "").trim() || defaultName(i));
     }
     storage.saveCount(players);
-    storage.savePrefs({ questionCount, intervalSec, answerSec, maxWrongs, categoryIds, useTTS, shuffleAnswer });
+    storage.savePrefs({ questionCount, intervalSec, answerSec, maxWrongs, categoryIds, useTTS, shuffleAnswer, showAnswerText });
     onStart({
       players,
       playerNames: finalNames,
@@ -81,6 +83,7 @@ export default function Setup({ categories, categoriesVersion = 0, onStart, onCa
       categoryIds,
       useTTS,
       shuffleAnswer,
+      showAnswerText,
     });
   };
 
@@ -175,6 +178,20 @@ export default function Setup({ categories, categoriesVersion = 0, onStart, onCa
         <label className="flex items-center gap-2 mb-3 cursor-pointer">
           <input type="checkbox" checked={useTTS} onChange={(e) => setUseTTS(e.target.checked)} className="w-5 h-5 accent-coral" />
           <span className="font-bold">啟用語音播報</span>
+        </label>
+        <label className="flex items-start gap-2 mb-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showAnswerText}
+            onChange={(e) => setShowAnswerText(e.target.checked)}
+            className="w-5 h-5 accent-coral mt-0.5"
+          />
+          <span>
+            <span className="font-bold">答題者可看到題目文字</span>
+            <span className="block text-xs text-deep/60 mt-0.5">
+              冷僻字念不出來時的視覺 fallback；其他玩家還是只能靠聲音
+            </span>
+          </span>
         </label>
         <label className="flex items-center gap-2 mb-3 cursor-pointer">
           <input type="checkbox" checked={shuffleAnswer} onChange={(e) => setShuffleAnswer(e.target.checked)} className="w-5 h-5 accent-coral" />

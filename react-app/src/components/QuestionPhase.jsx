@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { speak, cancelAllSpeech } from "../lib/tts";
+import { speak, speakNow, cancelAllSpeech } from "../lib/tts";
 import { sleep } from "../lib/util";
 
 export default function QuestionPhase({ questions, intervalMs, useTTS, onDone }) {
@@ -101,6 +101,17 @@ export default function QuestionPhase({ questions, intervalMs, useTTS, onDone })
           />
         </div>
       </div>
+
+      {/* Replay button — user gesture 觸發最穩，可重念當前題 */}
+      {useTTS && (
+        <button
+          onClick={() => speakNow(questions[idx].name)}
+          className="btn-soft text-sm mt-6"
+          aria-label="重播語音"
+        >
+          🔁 重播語音
+        </button>
+      )}
     </div>
   );
 }
