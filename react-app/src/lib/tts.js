@@ -129,6 +129,26 @@ export function refreshVoices() {
   }
 }
 
+// 在使用者點「開始遊戲」的手勢內先碰一次 Web Speech，避免瀏覽器擋掉後續自動播報。
+export function unlockTTS() {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return
+
+  refreshVoices()
+
+  const synth = window.speechSynthesis
+  if (synth.paused) synth.resume()
+
+  try {
+    const u = new SpeechSynthesisUtterance("準備")
+    u.lang = chosenVoice?.lang || "zh-TW"
+    u.volume = 0
+    if (chosenVoice) u.voice = chosenVoice
+    synth.speak(u)
+  } catch (e) {
+    console.warn("[tts] unlock error", e)
+  }
+}
+
 export function selectVoice(voice) {
   chosenVoice = voice
   userSelectedManually = true
@@ -237,6 +257,8 @@ function speakOne(text, opts = {}) {
       resolve()
       return
     }
+
+    refreshVoices()
 
     const synth = window.speechSynthesis
 

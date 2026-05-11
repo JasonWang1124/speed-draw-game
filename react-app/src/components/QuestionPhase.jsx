@@ -6,21 +6,24 @@ import { sleep } from "../lib/util";
 export default function QuestionPhase({ questions, intervalMs, useTTS, onDone }) {
   const [idx, setIdx] = useState(-1); // -1 = countdown phase
   const [count, setCount] = useState(3);
-  const stoppedRef = useRef(false);
+  const runIdRef = useRef(0);
 
   useEffect(() => {
-    stoppedRef.current = false;
+    const runId = runIdRef.current + 1;
+    runIdRef.current = runId;
+    const isStale = () => runIdRef.current !== runId;
+
     (async () => {
       // 倒數：每秒一個數字 + GO!
       for (let n = 3; n >= 1; n--) {
-        if (stoppedRef.current) return;
+        if (isStale()) return;
         setCount(n);
         await Promise.all([
           speakNow(String(n), { disabled: !useTTS }),
           sleep(700),
         ]);
       }
-      if (stoppedRef.current) return;
+      if (isStale()) return;
       setCount(0);
       await Promise.all([
         speakNow("開始", { disabled: !useTTS }),
@@ -29,17 +32,18 @@ export default function QuestionPhase({ questions, intervalMs, useTTS, onDone })
 
       // 出題：每題保證至少念完才進下一題，避免 Chrome speech queue 累積導致跳字
       for (let i = 0; i < questions.length; i++) {
-        if (stoppedRef.current) return;
+        if (isStale()) return;
         setIdx(i);
+        const questionText = questions[i]?.name?.trim();
         await Promise.all([
-          speakNow(questions[i].name, { disabled: !useTTS }),
+          speakNow(questionText, { disabled: !useTTS }),
           sleep(intervalMs),
         ]);
       }
-      if (!stoppedRef.current) onDone();
+      if (!isStale()) onDone();
     })();
     return () => {
-      stoppedRef.current = true;
+      if (runIdRef.current === runId) runIdRef.current += 1;
       cancelAllSpeech();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

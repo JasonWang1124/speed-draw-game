@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { storage } from "../lib/storage";
 import { clamp, defaultName } from "../lib/util";
-import { speakDirect, refreshVoices, getChosenVoice, selectVoice, playBeep, getChineseVoices, getAllVoicesScored } from "../lib/tts";
+import { speakDirect, refreshVoices, getChosenVoice, selectVoice, playBeep, getChineseVoices, getAllVoicesScored, unlockTTS } from "../lib/tts";
 import CategoryPicker from "./CategoryPicker";
 import MyPacks from "./MyPacks";
 import VoiceStatusCard from "./VoiceStatusCard";
@@ -73,6 +73,7 @@ export default function Setup({ categories, categoriesVersion = 0, onStart, onCa
     }
     storage.saveCount(players);
     storage.savePrefs({ questionCount, intervalSec, answerSec, maxWrongs, categoryIds, useTTS, shuffleAnswer, showAnswerText });
+    if (useTTS) unlockTTS();
     onStart({
       players,
       playerNames: finalNames,
