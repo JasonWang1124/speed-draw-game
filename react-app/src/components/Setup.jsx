@@ -287,11 +287,11 @@ export default function Setup({ categories, categoriesVersion = 0, onStart, onCa
       {/* ─── 製作署名 ─── */}
       <footer className="text-center mt-12 pt-6 border-t border-dashed border-[var(--color-ink)]/15">
         <a
-          href="https://github.com/JasonWang1124"
+          href="https://github.com/JasonWang1124/speed-draw-game"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center justify-center gap-2 mb-1 group transition"
-          aria-label="GitHub @JasonWang1124"
+          aria-label="GitHub repository — speed-draw-game"
         >
           <span className="font-stamp text-sm text-[var(--color-vermillion)] leading-none">作</span>
           <span className="font-display text-xs tracking-[0.4em] text-[var(--color-ink-soft)]/70 group-hover:text-[var(--color-ink)] underline-offset-4 decoration-2 decoration-[var(--color-vermillion)]/0 group-hover:decoration-[var(--color-vermillion)] group-hover:underline transition">
