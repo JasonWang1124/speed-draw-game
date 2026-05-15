@@ -283,6 +283,20 @@ export default function Setup({ categories, categoriesVersion = 0, onStart, onCa
           ／ 即 將 揭 幕 ／
         </div>
       </div>
+
+      {/* ─── 製作署名 ─── */}
+      <footer className="text-center mt-12 pt-6 border-t border-dashed border-[var(--color-ink)]/15">
+        <div className="flex items-center justify-center gap-2 mb-1">
+          <span className="font-stamp text-sm text-[var(--color-vermillion)] leading-none">作</span>
+          <span className="font-display text-xs tracking-[0.4em] text-[var(--color-ink-soft)]/70">
+            J A S O N　W A N G
+          </span>
+          <span className="font-stamp text-sm text-[var(--color-vermillion)] leading-none">製</span>
+        </div>
+        <div className="font-display text-[10px] tracking-[0.3em] text-[var(--color-ink-soft)]/50">
+          丙午　二〇二六
+        </div>
+      </footer>
     </motion.div>
   );
 }
