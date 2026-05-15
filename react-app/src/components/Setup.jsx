@@ -294,7 +294,7 @@ export default function Setup({ categories, categoriesVersion = 0, onStart, onCa
           <span className="font-stamp text-sm text-[var(--color-vermillion)] leading-none">製</span>
         </div>
         <div className="font-display text-[10px] tracking-[0.3em] text-[var(--color-ink-soft)]/50">
-          丙午　二〇二六
+          二〇二六
         </div>
       </footer>
     </motion.div>
