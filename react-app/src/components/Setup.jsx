@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { storage } from "../lib/storage";
 import { clamp, defaultName } from "../lib/util";
-import { speakDirect, refreshVoices, getChosenVoice, selectVoice, playBeep, getChineseVoices, getAllVoicesScored, unlockTTS } from "../lib/tts";
+import { speakDirect, speakNow, refreshVoices, getChosenVoice, selectVoice, playBeep, getChineseVoices, getAllVoicesScored, unlockTTS } from "../lib/tts";
 import CategoryPicker from "./CategoryPicker";
 import MyPacks from "./MyPacks";
 import VoiceStatusCard from "./VoiceStatusCard";
@@ -10,6 +10,9 @@ import heroLanterns from "../assets/hero-lanterns.png";
 
 // 章節編號（壹貳參肆伍） — 取代 emoji
 const SECTION_NUMERALS = ["壹", "貳", "參", "肆", "伍"];
+// 對齊 QuestionPhase 的 COUNTDOWN_TTS_RATE：開席首句「三」也用 1.2，
+// 才能在 800ms 內念完，下一句「二」不需要 cancel
+const START_TTS_RATE = 1.2;
 
 export default function Setup({ categories, categoriesVersion = 0, onStart, onCategoriesChanged }) {
   const cachedPrefs = useMemo(() => storage.loadPrefs(), []);
@@ -64,7 +67,10 @@ export default function Setup({ categories, categoriesVersion = 0, onStart, onCa
     }
     storage.saveCount(players);
     storage.savePrefs({ questionCount, intervalSec, answerSec, maxWrongs, categoryIds, useTTS, shuffleAnswer, showAnswerText });
-    if (useTTS) unlockTTS();
+    if (useTTS) {
+      unlockTTS();
+      speakNow("三", { rate: START_TTS_RATE });
+    }
     onStart({
       players,
       playerNames: finalNames,
@@ -74,6 +80,7 @@ export default function Setup({ categories, categoriesVersion = 0, onStart, onCa
       maxWrongs: clamp(maxWrongs, 0, 5),
       categoryIds,
       useTTS,
+      firstCountdownSpoken: useTTS,
       shuffleAnswer,
       showAnswerText,
     });
@@ -131,7 +138,7 @@ export default function Setup({ categories, categoriesVersion = 0, onStart, onCa
       {/* ─── 參賽者 ─── */}
       <SectionScroll index={0} title="參賽者" subtitle="Hosts" delay={0.1}>
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-          <span className="font-display text-base text-[var(--color-ink-soft)] tracking-widest">人　數</span>
+          <span className="font-display text-base text-[var(--color-ink-soft)] tracking-widest">人 數</span>
           <div className="flex items-center gap-3">
             <CircleBtn onClick={() => setPlayers(p => Math.max(2, p - 1))} aria-label="減少人數">−</CircleBtn>
             <span className="font-stamp text-4xl text-[var(--color-vermillion)] w-12 text-center leading-none">{players}</span>
@@ -270,7 +277,7 @@ export default function Setup({ categories, categoriesVersion = 0, onStart, onCa
           disabled={categoryIds.length === 0}
           className="btn-seal text-lg sm:text-xl px-14 sm:px-20 py-5"
         >
-          開　席
+          開 席
         </motion.button>
         <div className="mt-5 font-display text-xs text-[var(--color-ink-soft)] tracking-[0.4em]">
           ／ 即 將 揭 幕 ／

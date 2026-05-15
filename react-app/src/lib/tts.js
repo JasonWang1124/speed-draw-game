@@ -13,6 +13,7 @@ let chosenVoice = null
 let userSelectedManually = false  // 使用者是否在 UI 上手動選過
 let speakChain = Promise.resolve()
 let watchdogTimer = null
+let currentSpeechStartedAt = 0  // 目前 utterance 開始時刻；watchdog 用來判斷是否進入 Chrome 15s 暫停風險區
 
 // ─── voice 選取分數 ────────────────────────────
 // 分數越高越優先；目的：Google 國語（臺灣）一定排第一
@@ -129,24 +130,19 @@ export function refreshVoices() {
   }
 }
 
-// 在使用者點「開始遊戲」的手勢內先碰一次 Web Speech，避免瀏覽器擋掉後續自動播報。
+// 在使用者點「開始遊戲」的手勢內 reset TTS 狀態（清空隊列、refresh voice）。
+// 注意：不做 volume=0 的 priming utterance — 那會被緊接著的 speakNow("三") cancel 掉，
+// 反而把 Chrome engine 卡進 cancel/speak 競態。真正的解鎖靠**接著呼叫的 speakNow 在同步堆疊內
+// 直接呼叫 synth.speak()**（見 speakNow 的 idle path）。
 export function unlockTTS() {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return
 
   refreshVoices()
 
   const synth = window.speechSynthesis
+  if (synth.speaking || synth.pending) synth.cancel()
   if (synth.paused) synth.resume()
-
-  try {
-    const u = new SpeechSynthesisUtterance("準備")
-    u.lang = chosenVoice?.lang || "zh-TW"
-    u.volume = 0
-    if (chosenVoice) u.voice = chosenVoice
-    synth.speak(u)
-  } catch (e) {
-    console.warn("[tts] unlock error", e)
-  }
+  speakChain = Promise.resolve()
 }
 
 export function selectVoice(voice) {
@@ -234,15 +230,17 @@ export function initTTS() {
   setTimeout(refreshVoices, 1000)
   setTimeout(refreshVoices, 3000)
 
-  // Chrome 防 idle 暫停 watchdog（每 5 秒喚醒一次）
+  // Chrome 長句防暫停 watchdog：Chrome 連續念超過 ~15 秒會自動暫停。
+  // 只在 utterance 已連續播超過 12 秒才介入 pause/resume，避免短句被切音。
   if (watchdogTimer) clearInterval(watchdogTimer)
   watchdogTimer = setInterval(() => {
     const synth = window.speechSynthesis
-    if (synth?.speaking && !synth.paused) {
-      synth.pause()
-      synth.resume()
-    }
-  }, 5000)
+    if (!synth?.speaking || synth.paused) return
+    const elapsed = Date.now() - currentSpeechStartedAt
+    if (elapsed < 12000) return
+    synth.pause()
+    synth.resume()
+  }, 4000)
 }
 
 // ─── 核心 speak（Promise 鏈接版） ──────────────
@@ -283,12 +281,14 @@ function speakOne(text, opts = {}) {
       resolve()
     }
 
-    u.onend = finish
-    u.onerror = () => finish()
-
-    // 安全網：5 秒內 onend 沒觸發就強制 resolve（不阻塞 chain）
-    const safetyTimer = setTimeout(finish, 5000)
+    // 安全網：8 秒內 onend 沒觸發就強制 resolve（不阻塞 chain）
+    const safetyTimer = setTimeout(finish, 8000)
+    u.onstart = () => { currentSpeechStartedAt = Date.now() }
     u.onend = () => {
+      clearTimeout(safetyTimer)
+      finish()
+    }
+    u.onerror = () => {
       clearTimeout(safetyTimer)
       finish()
     }
@@ -311,6 +311,10 @@ export function speak(text, opts = {}) {
 
 // 立即播報（中斷上一個）— 用在 user gesture 內或要打斷時
 // 所有路徑都回 Promise，方便配 Promise.all([speakNow(...), sleep(N)]) 控節奏
+//
+// idle path 為何要同步：在 user gesture handler 內第一次呼叫時，必須**同步**
+// 呼叫 synth.speak() 才能用掉 user activation 解鎖 Chrome 後續的 TTS。
+// 一旦走 setTimeout 就跳出 gesture 同步堆疊，Chrome 會把首句靜默丟掉。
 export function speakNow(text, opts = {}) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) {
     return Promise.resolve()
@@ -318,11 +322,15 @@ export function speakNow(text, opts = {}) {
   if (opts.disabled) return Promise.resolve()
   const synth = window.speechSynthesis
   const wasSpeaking = synth.speaking || synth.pending
-  if (wasSpeaking) synth.cancel()
-  // Chrome bug workaround：cancel 後立刻 speak 偶爾不發聲（內部狀態還沒清）
-  // 隔個 microtick + 短延遲再 speak 大幅改善穩定度
-  const delay = wasSpeaking ? 60 : 0
-  speakChain = new Promise(r => setTimeout(r, delay)).then(() => speakOne(text, opts))
+
+  if (wasSpeaking) {
+    synth.cancel()
+    // Chrome cancel→speak race：120ms 緩衝給內部狀態清乾淨
+    speakChain = new Promise(r => setTimeout(r, 120)).then(() => speakOne(text, opts))
+  } else {
+    // idle — 同步 speak 以保留 user gesture activation（首次解鎖必須這樣）
+    speakChain = speakOne(text, opts)
+  }
   return speakChain
 }
 

@@ -48,10 +48,6 @@ export default function App() {
     setPendingShare(null);
     clearShareHash();
   };
-  // categoriesVersion 變動 → Setup 收到新 props → 重抓題庫
-  // eslint-disable-next-line no-unused-expressions
-  categoriesVersion;
-
   const startGame = (cfg) => {
     setConfig(cfg);
     // categoryIds 為陣列；空陣列或 "all" 表示全選
@@ -94,6 +90,7 @@ export default function App() {
           questions={questions}
           intervalMs={config.intervalMs}
           useTTS={config.useTTS}
+          firstCountdownSpoken={config.firstCountdownSpoken}
           onDone={() => setPhase("answer")}
         />
       )}

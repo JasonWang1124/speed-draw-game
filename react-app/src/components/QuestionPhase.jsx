@@ -14,16 +14,25 @@ function chineseNum(n) {
   return digits[tens] + "十" + (ones ? digits[ones] : "");
 }
 
-const QUESTION_TTS_RATE = 1.35;
+const QUESTION_TTS_RATE = 1.0;
+// 倒數的速率刻意比題目快：1.2 倍可在 800ms cadence 內把單字念完，
+// 避免下一句 speakNow 還要 cancel 上一句 → 觸發 Chrome cancel/speak race 吞句
+const COUNTDOWN_TTS_RATE = 1.2;
+const COUNTDOWN_SLEEP_MS = 800;
+const COUNTDOWN_SPEECH = {
+  1: "一",
+  2: "二",
+  3: "三",
+};
 
 function estimateQuestionDuration(text, baseMs, useTTS) {
   if (!useTTS || !text) return baseMs;
   const charCount = Array.from(text).filter(ch => ch.trim()).length;
-  const estimatedMs = 500 + charCount * 260;
-  return Math.max(baseMs, Math.min(5200, estimatedMs));
+  const estimatedMs = 650 + charCount * 330;
+  return Math.max(baseMs, Math.min(6500, estimatedMs));
 }
 
-export default function QuestionPhase({ questions, intervalMs, useTTS, onDone }) {
+export default function QuestionPhase({ questions, intervalMs, useTTS, firstCountdownSpoken = false, onDone }) {
   const [idx, setIdx] = useState(-1); // -1 = countdown phase
   const [count, setCount] = useState(3);
   const [questionDurationMs, setQuestionDurationMs] = useState(intervalMs);
@@ -35,17 +44,19 @@ export default function QuestionPhase({ questions, intervalMs, useTTS, onDone })
     const isStale = () => runIdRef.current !== runId;
 
     (async () => {
-      // 倒數：每秒一個數字 + GO!
+      // 倒數：每個數字一拍 + 開始
       for (let n = 3; n >= 1; n--) {
         if (isStale()) return;
         setCount(n);
-        speakNow(String(n), { disabled: !useTTS, rate: QUESTION_TTS_RATE });
-        await sleep(700);
+        if (!(firstCountdownSpoken && n === 3)) {
+          speakNow(COUNTDOWN_SPEECH[n], { disabled: !useTTS, rate: COUNTDOWN_TTS_RATE });
+        }
+        await sleep(COUNTDOWN_SLEEP_MS);
       }
       if (isStale()) return;
       setCount(0);
-      speakNow("開始", { disabled: !useTTS, rate: QUESTION_TTS_RATE });
-      await sleep(500);
+      speakNow("開始", { disabled: !useTTS, rate: COUNTDOWN_TTS_RATE });
+      await sleep(600);
 
       // 出題節奏以設定秒數為底線，TTS 開啟時長題會自動加一點時間避免被下一題切斷。
       for (let i = 0; i < questions.length; i++) {
@@ -74,7 +85,7 @@ export default function QuestionPhase({ questions, intervalMs, useTTS, onDone })
       <div className="min-h-screen flex items-center justify-center px-6">
         <div className="text-center">
           <p className="font-display text-xs sm:text-sm tracking-[0.6em] text-[var(--color-ink-soft)]/70 mb-10">
-            ─　準　備　出　題　─
+            ─ 準 備 出 題 ─
           </p>
           <AnimatePresence mode="wait">
             <motion.div
@@ -163,7 +174,7 @@ export default function QuestionPhase({ questions, intervalMs, useTTS, onDone })
         transition={{ delay: 0.2 }}
         className="font-stamp text-3xl sm:text-4xl text-[var(--color-ink)] tracking-[0.4em] mb-2"
       >
-        仔　細　聆　聽
+        仔 細 聆 聽
       </motion.div>
       <div className="font-display text-xs tracking-[0.5em] text-[var(--color-ink-soft)]/60 mb-10">
         LISTEN CAREFULLY
